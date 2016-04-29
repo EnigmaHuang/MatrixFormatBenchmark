@@ -50,7 +50,16 @@ private:
 
 /*****Free Functions*MMreader*************************************************/
 template <typename T>
-std::ostream& operator<<( std::ostream& os, std::vector<T>& vec );
+std::ostream& operator<<( std::ostream& os, std::vector<T>& vec )
+{
+    for (auto it=vec.begin(); it!=vec.end(); ++it)
+    {
+        os << *it << '\n';
+    }
+
+    os.flush();
+    return os;
+}
 
 std::ostream& operator<<( std::ostream& os, std::tuple<int,int,double> data );
 
@@ -77,4 +86,21 @@ inline void sortByRow(MMreader& mmMatrix)
 
 /*  std::cout << matrix;*/
 }
+
+template <typename T>
+bool operator ==(std::vector<T> const& a, std::vector<T> const& b)
+{
+    bool status = a.size() == b.size();
+
+    if (!status)
+        return status;
+
+    for (int i=0; i<a.size(); ++i)
+    {
+        status = (a[i] == b[i]) && status;
+    }
+
+    return status;
+}
+
 #endif

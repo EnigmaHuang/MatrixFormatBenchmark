@@ -85,15 +85,3 @@ std::ostream& operator<<( std::ostream& os, std::tuple<int,int,double> data )
     return os;
 }
 
-template <typename T>
-std::ostream& operator<<( std::ostream& os, std::vector<T>& vec )
-{
-    for (auto it=vec.begin(); it!=vec.end(); ++it)
-    {
-        os << *it << '\n';
-    }
-
-    os.flush();
-    return os;
-}
-
