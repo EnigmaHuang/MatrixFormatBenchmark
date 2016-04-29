@@ -3,6 +3,11 @@
 #include <tuple>
 #include <iostream>
 
+extern "C"
+{
+#include <likwid.h>
+#include "timing/timing.h"
+}
 
 /*****Implementation*CSR_MATRIX***********************************************/
 CSR_Matrix::CSR_Matrix( MMreader mmMatrix )
@@ -48,7 +53,7 @@ CSR_Matrix::CSR_Matrix( MMreader mmMatrix )
 }
 
 /*****Free Functions*CSR_MATRIX***********************************************/
-std::ostream& operator<<(std::ostream& os, CSR_Matrix const & matrix)
+std::ostream& operator<<( std::ostream& os, CSR_Matrix const & matrix )
 {
 
     int const * colInd = matrix.getColInd();
@@ -67,4 +72,49 @@ std::ostream& operator<<(std::ostream& os, CSR_Matrix const & matrix)
     }
 
     return os;
+}
+
+double spMV( CSR_Matrix const & A, double const *x, double *y )
+{
+    double const *val = A.getValues();
+    int const *colInd = A.getColInd();
+    int const *rowPtr = A.getRowPtr();
+    int const rows    = A.getRows();
+
+    double timeing_start, timeing_end, runtime, cpuTime;
+
+#pragma omp parallel
+    { // open paralel region
+        timing(&timeing_start, &cpuTime);
+
+        LIKWID_MARKER_THREADINIT;
+        LIKWID_MARKER_START("SpMV_CSR");
+
+#pragma omp for
+        // loop over all rows
+        for (int rowID=0; rowID<rows; ++rowID)
+        {
+            int id = rowPtr[rowID];
+
+            // set y vec to 0
+            y[rowID] = 0;
+
+            // loop over all elements in row
+            for (; id<rowPtr[rowID+1]; ++id)
+            {
+                y[rowID] += val[id] * x[ colInd[id] ];
+
+            }
+        }
+
+        LIKWID_MARKER_STOP("SpMV_CSR");
+
+        timing(&timeing_end, &cpuTime);
+        runtime = timeing_end - timeing_start;
+
+        //TODO performance
+
+    } // close paralel region
+
+    return runtime;
 }

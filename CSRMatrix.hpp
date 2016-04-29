@@ -31,4 +31,15 @@ private:
 /*****Free Functions*CSR_MATRIX***********************************************/
 std::ostream& operator<<(std::ostream& os, CSR_Matrix const & matrix);
 
+/**
+ * sparse Matrix-Vector multiplication
+ * y=Ax
+ * using the CSR Format
+ * y and x musst be allocated and valid
+ * OMP parallel
+ *
+ * returns the runtime of the kernel
+ */
+double spMV( CSR_Matrix const & A, double const *x, double *y );
+
 #endif
