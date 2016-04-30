@@ -6,7 +6,7 @@ LDFLAGS  =
 OMPFLAG  = -fopenmp
 RM       = rm -f
 
-BIN                 = example test_seriell test_omp benchmark_seriell benchmark_omp
+BIN                 = test_seriell test_omp benchmark_seriell benchmark_omp
 OFILES_example      = mmio/mmio.o example_read.o
 OFILES_testSer      = mmio/mmio.o MMreader.o CSRMatrix_ser.o timing/timing.o test.o
 OFILES_testOMP      = mmio/mmio.o MMreader.o CSRMatrix_omp.o timing/timing.o test.o
@@ -23,9 +23,6 @@ clean:
 
 
 ##########BIN#################################################################
-example: $(OFILES_example)
-	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
-
 test_seriell: $(OFILES_testSer)
 	$(CPP) $(CPPFLAGS)            -o $@ $^ $(LDFLAGS)
 test_omp:     $(OFILES_testOMP)
@@ -60,5 +57,4 @@ CSRMatrix_omp.o: CSRMatrix.cpp MMreader.hpp
 ##########DEPENDENCIES#######################################################
 test.o: test.cpp CSRMatrix.hpp MMreader.hpp
 benchmark.o: benchmark.cpp CSRMatrix.hpp MMreader.hpp
-example_read.o: example_read.c mmio/mmio.h
 MMreader.o: MMreader.cpp MMreader.hpp mmio/mmio.h
