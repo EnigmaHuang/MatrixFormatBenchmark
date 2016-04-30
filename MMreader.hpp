@@ -28,6 +28,7 @@ public:
     int getRows() const { return M_; }
     int getCols() const { return N_; }
     int getNonZeros() const { return nz_; }
+    bool getSymmetry() const { return isSymmetric_; }
     std::vector< std::tuple<int,int,double> > const & getMatrx() const
     {
         return matrix_;
@@ -39,11 +40,12 @@ public:
 
 private:
     int M_, N_, nz_;    // number of rows, collumns and nonzeros in Matrix
+    bool isSymmetric_;
     bool isRowSorted_, isColSorted_;
 
     // intermidiate (cordinate based) representation of sparse matrix
     // zero based (!)
-    std::vector< std::tuple<int,int,double> > matrix_;  
+    std::vector< std::tuple<int,int,double> > matrix_;      //TODO use a set?
 
 };
 

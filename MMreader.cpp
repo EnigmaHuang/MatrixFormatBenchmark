@@ -19,7 +19,7 @@ MMreader::MMreader(char const *fileName)
     if ( NULL == (f=fopen(fileName, "r")) )
     {
         std::cerr << "Can not open file " << fileName << std::endl;
-        exit(1); //TODO exeptopn -> more cpp style
+        exit(1);
     }
 
     // read header of matrix file
@@ -30,17 +30,22 @@ MMreader::MMreader(char const *fileName)
     }
 
     // Test propertis 
-    if ( !mm_is_matrix(matcode) || !mm_is_sparse(matcode) )
+    if (   !mm_is_matrix(matcode)
+        || !mm_is_sparse(matcode)
+        || !mm_is_coordinate(matcode)
+       )
     {
         printf("Sorry, this application does not support ");
         printf("Market Market type: [%s]\n", mm_typecode_to_str(matcode));
         exit(1);
     }
-    if ( mm_is_complex(matcode) )
+    if ( mm_is_complex(matcode) || mm_is_pattern(matcode) )
     {
-        printf("Complex numbers not suported\n");
+        printf("Complex and pattern matrices are not suported\n");
         exit(1);
     }
+
+    //TODO real und interger unterscheidung
 
     // get matrix size
     if ( 0 != mm_read_mtx_crd_size(f, &M_, &N_, &nz_) )
@@ -50,7 +55,25 @@ MMreader::MMreader(char const *fileName)
     }
 
     // allocate memmory
-    matrix_.reserve(nz_);
+    if ( mm_is_general(matcode) )
+    {
+        matrix_.reserve(nz_);
+        isSymmetric_ = false;
+    }
+    else if ( mm_is_symmetric(matcode)
+            ||mm_is_hermitian(matcode)
+            ||mm_is_skew(matcode)
+            )
+    {
+        matrix_.reserve(2*nz_);
+        isSymmetric_ = true;
+    }
+    else
+    {
+        printf("Sorry, this application does not support ");
+        printf("Market Market type: [%s]\n", mm_typecode_to_str(matcode));
+        exit(1);
+    }
 
     // read matrix
     int row, col;
@@ -58,12 +81,18 @@ MMreader::MMreader(char const *fileName)
     for (int i=0; i<nz_; ++i)
     {
         fscanf(f, "%d %d %lg\n", &row, &col, &val);
+        //TODO use uint
 
         // adjust from one-baed to zero-based indes
         --row;
         --col;
 
         matrix_.emplace_back( std::forward_as_tuple(row, col, val) );
+
+        if (isSymmetric_ && (row!=col))
+        {
+            matrix_.emplace_back( std::forward_as_tuple(col, row, val) );
+        }
     }
 
 /*
