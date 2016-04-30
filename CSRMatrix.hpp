@@ -2,6 +2,7 @@
 #define CSRMatrix_HPP
 
 #include <vector>
+#include <tuple>
 
 #include "MMreader.hpp"
 
@@ -38,8 +39,9 @@ std::ostream& operator<<(std::ostream& os, CSR_Matrix const & matrix);
  * y and x musst be allocated and valid
  * OMP parallel
  *
- * returns the runtime of the kernel
+ * returns a tuple containg the  runtime and the performance (flops/time)
+ * of the kernel
  */
-double spMV( CSR_Matrix const & A, double const *x, double *y );
+std::tuple<double,double> spMV( CSR_Matrix const & A, double const *x, double *y );
 
 #endif

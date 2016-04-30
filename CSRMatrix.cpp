@@ -74,14 +74,16 @@ std::ostream& operator<<( std::ostream& os, CSR_Matrix const & matrix )
     return os;
 }
 
-double spMV( CSR_Matrix const & A, double const *x, double *y )
+std::tuple<double,double> spMV( CSR_Matrix const & A, double const *x, double *y )
 {
-    double const *val = A.getValues();
-    int const *colInd = A.getColInd();
-    int const *rowPtr = A.getRowPtr();
-    int const rows    = A.getRows();
+    double const *val  = A.getValues();
+    int const *colInd  = A.getColInd();
+    int const *rowPtr  = A.getRowPtr();
+    int const rows     = A.getRows();
+    int const nonZeros = A.getNonZeros();
 
     double timeing_start, timeing_end, runtime, cpuTime;
+    double performance;
 
 #pragma omp parallel
     { // open paralel region
@@ -112,9 +114,10 @@ double spMV( CSR_Matrix const & A, double const *x, double *y )
         timing(&timeing_end, &cpuTime);
         runtime = timeing_end - timeing_start;
 
-        //TODO performance
+        int flops = nonZeros*2 - rows;
+        performance = flops/runtime;
 
     } // close paralel region
 
-    return runtime;
+    return std::make_tuple(runtime, performance);
 }

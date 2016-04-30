@@ -27,9 +27,11 @@ int main(int argc, char *argv[])
     std::vector<double> x (csr_matrix.getRows(), 42.);
     std::vector<double> y (csr_matrix.getRows(), 0.);
 
-    double runtime = spMV( csr_matrix, x.data(), y.data() );
+    auto messerment = spMV( csr_matrix, x.data(), y.data() );
 
-    std::cout << "Runtime: " << runtime << std::endl;
+    std::cout << "Runtime: " << std::get<0>(messerment) << "sec "
+              << "Performance: " << std::get<1>(messerment) << "Flops/sec"
+              << std::endl;
 
     return 0;
 }
