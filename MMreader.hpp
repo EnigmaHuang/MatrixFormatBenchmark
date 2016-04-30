@@ -95,12 +95,31 @@ bool operator ==(std::vector<T> const& a, std::vector<T> const& b)
     if (!status)
         return status;
 
-    for (int i=0; i<a.size(); ++i)
+    for (size_t i=0; i<a.size(); ++i)
     {
         status = (a[i] == b[i]) && status;
     }
 
     return status;
+}
+
+template <typename T>
+bool operator ==(std::vector<T> const& a, T const& b)
+{
+    bool status = true;
+
+    for (size_t i=0; i<a.size(); ++i)
+    {
+        status = (a[i] == b) && status;
+    }
+
+    return status;
+}
+
+template <typename T>
+bool operator ==(T const& a, std::vector<T> const& b)
+{
+    return b==a;
 }
 
 #endif

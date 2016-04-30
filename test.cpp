@@ -22,6 +22,7 @@ int main(int argc, char *argv[])
 
 
 /****TEST: IDEBTITY MAXTRIX***************************************************/
+    {
     // read smal identity
     MMreader identity ("matrices/matrix_identity_klein.mtx");
     CSR_Matrix identity_csr (identity);
@@ -40,8 +41,55 @@ int main(int argc, char *argv[])
     //std::cout << x;
 
     std::cout << "Identity: sucses!" << std::endl;
+    std::cout << "Runtime: " << runtime << std::endl;
+    }
 
 /****TEST: MORE COMPLEX MAXTRIX***********************************************/
+    {
+    MMreader band ("matrices/matrix_band_klein.mtx");
+    CSR_Matrix band_csr (band);
+
+    std::vector<double> y,x;
+    
+    for (int i=0; i<band_csr.getRows(); ++i)
+    {
+        x.push_back(1);
+        y.push_back(42);
+    }
+
+    double runtime = spMV( band_csr, x.data(), y.data() );
+
+    assert (y == x);
+    assert (y == 1.);
+    //std::cout << x;
+
+    std::cout << "Band: sucses!" << std::endl;
+    std::cout << "Runtime: " << runtime << std::endl;
+    }
+
+
+/****TEST: This Test must fail!***********************************************/
+    {
+    MMreader brockenBand ("matrices/matrix_brockenBand_klein.mtx");
+    CSR_Matrix brockenBand_csr (brockenBand);
+
+    std::vector<double> y,x;
+    
+    for (int i=0; i<brockenBand_csr.getRows(); ++i)
+    {
+        x.push_back(1);
+        y.push_back(42);
+    }
+
+    double runtime = spMV( brockenBand_csr, x.data(), y.data() );
+
+    if ( !(y==x) && !(y==1.) )
+    {
+        std::cout << "brockenBand: sucses!" << std::endl;
+        std::cout << "Runtime: " << runtime << std::endl;
+    }
+
+    }
 
     return 0;
 }

@@ -1,12 +1,15 @@
-GCC      = gcc
+CC       = gcc
 CPP      = g++
 CFLAGS   = -O3 -Wall -Winline -Wshadow -ansi
 CPPFLAGS = $(CFLAGS) -std=c++11
+LDFLAGS  = 
+OMPFLAG  = -fopenmp
 RM       = rm -f
 
-BIN            = example test
+BIN            = example test_seriell test_omp
 OFILES_example = mmio/mmio.o example_read.o
-OFILES_test    = mmio/mmio.o MMreader.o CSRMatrix.o timing/timing.o test.o
+OFILES_testSer = mmio/mmio.o MMreader.o CSRMatrix_ser.o timing/timing.o test.o
+OFILES_testOMP = mmio/mmio.o MMreader.o CSRMatrix_omp.o timing/timing.o test.o
 
 
 .PHONY: all clean
@@ -14,26 +17,39 @@ OFILES_test    = mmio/mmio.o MMreader.o CSRMatrix.o timing/timing.o test.o
 all: $(BIN)
 
 clean:
-	$(RM) $(BIN) $(OFILES_example) $(OFILES_test)
+	$(RM) $(BIN) $(OFILES_example) $(OFILES_testSer) $(OFILES_testOMP)
 
 example: $(OFILES_example)
-	$(CPP) $(CPPFLAGS) -o $@ $^
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
-test: $(OFILES_test)
-	$(CPP) $(CPPFLAGS) -o $@ $^
+test_seriell: $(OFILES_testSer)
+	$(CPP) $(CPPFLAGS) -o $@ $^ $(LDFLAGS)
+test_omp: $(OFILES_testOMP)
+	$(CPP) $(CPPFLAGS) $(OMPFLAG) -o $@ $^ $(LDFLAGS)
+
+
+
 
 # C compiler
+.c.o:
+	$(CC) $(CFLAGS) -c $<
+
 mmio/mmio.o: mmio/mmio.c mmio/mmio.h
-	$(GCC) $(CFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) -c -o $@ $<
 timing/timing.o: timing/timing.c timing/timing.h
-	$(GCC) $(CFLAGS) -c -o $@ $<
-example_read.o: example_read.c mmio/mmio.h
-	$(GCC) $(CFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 # CPP compiler
 .cpp.o:
 	$(CPP) $(CPPFLAGS) -c $<
 
+CSRMatrix_ser.o: CSRMatrix.cpp MMreader.hpp
+	$(CPP) $(CPPFLAGS) -c -o $@ $<
+CSRMatrix_omp.o: CSRMatrix.cpp MMreader.hpp
+	$(CPP) $(CPPFLAGS) $(OMPFLAG) -c -o $@ $<
+
+
+
 test.o: test.cpp mmio/mmio.h CSRMatrix.hpp MMreader.hpp
 MMreader.o: MMreader.cpp mmio/mmio.h
-CSRMatrix.o: CSRMatrix.cpp MMreader.hpp
+example_read.o: example_read.c mmio/mmio.h
