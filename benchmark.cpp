@@ -5,6 +5,12 @@
 #include <vector>
 #include <cassert>
 
+
+
+//TODO loop um kernel damit es ein wneig länger dauert
+//TODO performace
+//TODO andere Formate
+
 int main(int argc, char *argv[])
 {
     if (argc < 2)
