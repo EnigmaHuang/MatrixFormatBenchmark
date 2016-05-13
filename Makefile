@@ -1,6 +1,6 @@
 CC       = gcc
 CPP      = g++
-CFLAGS   = -O3 -Wall -Winline -Wshadow -ansi
+CFLAGS   = -O3 -Wall -Winline -Wshadow -ansi -g
 CPPFLAGS = $(CFLAGS) -std=c++11
 LDFLAGS  = 
 OMPFLAG  = -fopenmp

@@ -2,6 +2,7 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <numeric>
 
 extern "C"
 {
@@ -54,19 +55,20 @@ MMreader::MMreader(char const *fileName)
         exit(1);
     }
 
-    // allocate memmory
+    // detect symetry and allocate memmory
     if ( mm_is_general(matcode) )
     {
-        matrix_.reserve(nz_);
         isSymmetric_ = false;
+        matrix_.reserve(nz_);
     }
     else if ( mm_is_symmetric(matcode)
             ||mm_is_hermitian(matcode)
             ||mm_is_skew(matcode)
             )
     {
-        matrix_.reserve(2*nz_);
         isSymmetric_ = true;
+        // number of nonzeros <= nz_ * 2 (diagonale)
+        matrix_.reserve(nz_*2);
     }
     else
     {
@@ -88,10 +90,12 @@ MMreader::MMreader(char const *fileName)
         --col;
 
         matrix_.emplace_back( std::forward_as_tuple(row, col, val) );
+        //++entrys;
 
         if (isSymmetric_ && (row!=col))
         {
             matrix_.emplace_back( std::forward_as_tuple(col, row, val) );
+            //++entrys;
         }
     }
 
@@ -114,3 +118,59 @@ std::ostream& operator<<( std::ostream& os, std::tuple<int,int,double> data )
     return os;
 }
 
+void sortByRow(MMreader& mmMatrix)
+{
+/*  std::cout << "sort by row" << std::endl;*/
+
+    std::vector< std::tuple<int,int,double> > & matrix = mmMatrix.getMatrx(); 
+
+    // first sort by cll
+    std::sort( matrix.begin(), matrix.end(),
+                [](std::tuple<int,int,double> const &a,
+                    std::tuple<int,int,double> const &b)
+                    {return std::get<1>(a) < std::get<1>(b);}
+                );
+    // then (stable!) sort by row
+    std::stable_sort( matrix.begin(), matrix.end(),
+                        [](std::tuple<int,int,double> const &a,
+                            std::tuple<int,int,double> const &b)
+                        {return std::get<0>(a) < std::get<0>(b);}
+                    );
+
+    mmMatrix.isRowSorted(true);
+
+/*  std::cout << matrix;*/
+}
+
+//TODO return type: uniqi ptr, ref, normal type, rvalue reff
+std::vector<int> getValsPerRow(MMreader& mmMatrix)
+{
+    std::vector<int> valsPerRow(mmMatrix.getRows(), 0);
+
+    std::vector< std::tuple<int,int,double> > & mmData = mmMatrix.getMatrx();
+
+    for (auto it=mmData.begin(); it!=mmData.end(); ++it)
+    {
+        int    row = std::get<0>(*it);
+
+        ++valsPerRow[row];
+    }
+
+    return valsPerRow;
+}
+
+//TODO return type
+std::vector<int> getOffsets(std::vector<int>& valuesPerRow)
+{
+    std::vector<int> offsets;
+    offsets.reserve(valuesPerRow.size() + 1);
+
+    offsets.push_back(0);
+
+    //TODO parrallel (vor c++17(partition_scan) per hand)
+    std::partial_sum(valuesPerRow.begin(), valuesPerRow.end(),
+                     std::back_inserter(offsets));
+
+
+    return offsets;
+}

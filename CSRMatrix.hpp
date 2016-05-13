@@ -12,20 +12,27 @@
 class CSR_Matrix
 {
 public:
-    CSR_Matrix() = delete ;
-    explicit CSR_Matrix( MMreader mmMatrix );
+    CSR_Matrix( MMreader mmMatrix );        // constructor
+    ~CSR_Matrix();                          // destructor
+
+    // We do not need copy and move symantic for this benchmark
+    CSR_Matrix(CSR_Matrix const & other) = delete;   // copy constructor
+    CSR_Matrix(CSR_Matrix && other) = delete;        // move constructor
+
+    CSR_Matrix & operator= (CSR_Matrix const & other) = delete;  // copy assignment
+    CSR_Matrix & operator= (CSR_Matrix && other) = delete;       // move assignment
 
     int getRows() const { return M_; }
     int getCols() const { return N_; }
     int getNonZeros() const { return nz_; }
-    int const * getColInd() const  { return colInd_.data(); }
-    int const * getRowPtr() const  { return rowPtr_.data(); }
-    double const * getValues() const  { return val_.data(); }
+    int const * getColInd() const  { return colInd_; }
+    int const * getRowPtr() const  { return rowPtr_; }
+    double const * getValues() const  { return val_; }
 
 private:
     int M_, N_, nz_;
-    std::vector<int> colInd_, rowPtr_;
-    std::vector<double> val_;
+    int *colInd_, *rowPtr_;
+    double* val_;
 };
 
 

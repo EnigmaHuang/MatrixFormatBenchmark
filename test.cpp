@@ -11,7 +11,9 @@ int main(int argc, char *argv[])
 
 /****TEST: IDEBTITY MAXTRIX***************************************************/
     {
+    std::cout << "********Identity TEST *****************************" << std::endl;
     // read smal identity
+    //CSR_Matrix identity_csr ("matrices/matrix_identity_klein.mtx");
     MMreader identity ("matrices/matrix_identity_klein.mtx");
     CSR_Matrix identity_csr (identity);
 
@@ -36,6 +38,7 @@ int main(int argc, char *argv[])
 
 /****TEST: MORE COMPLEX MAXTRIX***********************************************/
     {
+    std::cout << "********Band TEST *****************************" << std::endl;
     MMreader band ("matrices/matrix_band_klein.mtx");
     CSR_Matrix band_csr (band);
 
@@ -61,9 +64,12 @@ int main(int argc, char *argv[])
 
 /****TEST: MORE SYMMETRIC MAXTRIX*********************************************/
     {
+    std::cout << "********Symetric TEST *****************************" << std::endl;
     MMreader bandSym ("matrices/matrix_band_symmetric_klein.mtx");
+std::cout << "1" << std::endl;
     CSR_Matrix band_sym_csr (bandSym);
 
+std::cout << "2" << std::endl;
     std::vector<double> y,x;
     
     for (int i=0; i<band_sym_csr.getRows(); ++i)
@@ -72,8 +78,10 @@ int main(int argc, char *argv[])
         y.push_back(42);
     }
 
+std::cout << "3" << std::endl;
     auto messerment = spMV( band_sym_csr, x.data(), y.data() );
 
+std::cout << "4" << std::endl;
     assert (y == x);
     assert (y == 1.);
     //std::cout << x;
@@ -87,6 +95,7 @@ int main(int argc, char *argv[])
 
 /****TEST: This Test must fail!***********************************************/
     {
+    std::cout << "********Broken Matrix TEST *****************************" << std::endl;
     MMreader brockenBand ("matrices/matrix_brockenBand_klein.mtx");
     CSR_Matrix brockenBand_csr (brockenBand);
 

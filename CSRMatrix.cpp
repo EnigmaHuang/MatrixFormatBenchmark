@@ -2,6 +2,8 @@
 
 #include <tuple>
 #include <iostream>
+#include <iterator>
+#include <algorithm>
 
 extern "C"
 {
@@ -12,37 +14,34 @@ extern "C"
 /*****Implementation*CSR_MATRIX***********************************************/
 CSR_Matrix::CSR_Matrix( MMreader mmMatrix )
 :M_(mmMatrix.getRows()), N_(mmMatrix.getCols()), nz_(mmMatrix.getNonZeros())
-//,colInd_(nz_), rowPtr_(M_+1), val_(nz_)
+,colInd_(new int[nz_]), rowPtr_(new int[M_+1]), val_(new double[nz_])
 {
-    // allocate memory
-    colInd_.reserve(nz_);
-    val_.reserve(nz_);
-    rowPtr_.reserve(M_+1);
-
     // sort input Matrix by row to create CSR Format
     if( !mmMatrix.isRowSorted() )
         sortByRow(mmMatrix);
 
-    // convert input Format to csr format
     std::vector< std::tuple<int,int,double> > & mmData = mmMatrix.getMatrx();
-    int currentRow = -1;
-    int currentID  = 0;
-    for (auto it=mmData.begin(); it!=mmData.end(); ++it, ++currentID)
+    std::vector<int> valuesPerRow = getValsPerRow(mmMatrix);
+    std::vector<int> offsets      = getOffsets(valuesPerRow);
+
+    // convert input Format to csr format (NUMA awareness!)
+#pragma omp parallel for schedule(static)
+    for (int rowID=0; rowID<getRows(); ++rowID)
     {
-        int row = std::get<0>(*it);
-        int col = std::get<1>(*it);
-        double val = std::get<2>(*it);
+        rowPtr_[rowID] = offsets[rowID];
 
-        val_.push_back(val);
-        colInd_.push_back(col);
-
-        if (row > currentRow)
+        //loop over all elements in Row
+        for (int i=offsets[rowID]; i<offsets[rowID+1]; ++i)
         {
-            rowPtr_.push_back(currentID);
-            currentRow = row;
+            int    col = std::get<1>(mmData[i]);
+            double val = std::get<2>(mmData[i]);
+        
+            val_[i]    = val;
+            colInd_[i] = col;
         }
     }
-    rowPtr_.push_back(currentID);
+
+    rowPtr_[M_] = offsets[M_];
 
 /*
     std::cout << "CSR constructed:\n"
@@ -51,6 +50,70 @@ CSR_Matrix::CSR_Matrix( MMreader mmMatrix )
               << rowPtr_.size() << std::endl;
 */
 }
+
+
+CSR_Matrix::~CSR_Matrix()
+{
+    delete[] colInd_;
+    delete[] val_;
+    delete[] rowPtr_;
+}
+
+/*
+CSR_Matrix::CSR_Matrix(CSR_Matrix const & other)
+:M_(other.M_), N_(other.N_), nz_(other.nz_),
+ colInd_(new int[nz_]), rowPtr_(new int[M_+1]), val_(new double[nz_])
+{
+
+    std::copy(other.colInd_, other.colInd_+nz_, colInd_);
+    std::copy(other.rowPtr_, other.rowPtr_+M_+1, rowPtr_);
+    std::copy(other.val_, other.val_+nz_, val_);
+}
+*/
+
+/*
+CSR_Matrix & CSR_Matrix::operator= (CSR_Matrix const & other)
+{
+    CSR_Matrix tmp (other);
+    std::swap ( M_, tmp.M_ );
+    std::swap ( N_, tmp.N_ );
+    std::swap ( nz_, tmp.nz_ );
+    std::swap ( colInd_, tmp.colInd_ );
+    std::swap ( rowPtr_, tmp.rowPtr_ );
+    std::swap ( val_, tmp.val_ );
+
+    return *this;
+}
+*/
+
+/*
+CSR_Matrix::CSR_Matrix( CSR_Matrix &&other )
+:M_(other.M_), N_(other.N_), nz_(other.nz_),
+ colInd_(new int[nz_]), rowPtr_(new int[M_+1]), val_(new double[nz_])
+{
+    other.M_ = 0;
+    other.N_ = 0;
+    other.nz_ = 0;
+    other.colInd_ = nullptr;
+    other.rowPtr_ = nullptr;
+    other.val_ = nullptr;
+}
+*/
+
+/*
+CSR_Matrix & CSR_Matrix::operator= (CSR_Matrix && other)
+{
+    CSR_Matrix tmp (other);
+    std::swap ( M_, other.M_ );
+    std::swap ( N_, other.N_ );
+    std::swap ( nz_, other.nz_ );
+    std::swap ( colInd_, other.colInd_ );
+    std::swap ( rowPtr_, other.rowPtr_ );
+    std::swap ( val_, other.val_ );
+
+    return *this;
+}
+*/
 
 /*****Free Functions*CSR_MATRIX***********************************************/
 std::ostream& operator<<( std::ostream& os, CSR_Matrix const & matrix )
@@ -92,7 +155,7 @@ std::tuple<double,double> spMV( CSR_Matrix const & A, double const *x, double *y
         LIKWID_MARKER_THREADINIT;
         LIKWID_MARKER_START("SpMV_CSR");
 
-#pragma omp for
+#pragma omp for schedule(static)
         // loop over all rows
         for (int rowID=0; rowID<rows; ++rowID)
         {
@@ -121,3 +184,4 @@ std::tuple<double,double> spMV( CSR_Matrix const & A, double const *x, double *y
 
     return std::make_tuple(runtime, performance);
 }
+

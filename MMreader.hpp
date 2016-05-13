@@ -27,7 +27,7 @@ public:
     void isColSorted(bool status) { isColSorted_ = status; }
     int getRows() const { return M_; }
     int getCols() const { return N_; }
-    int getNonZeros() const { return nz_; }
+    int getNonZeros() const { return matrix_.size(); }
     bool getSymmetry() const { return isSymmetric_; }
     std::vector< std::tuple<int,int,double> > const & getMatrx() const
     {
@@ -40,6 +40,7 @@ public:
 
 private:
     int M_, N_, nz_;    // number of rows, collumns and nonzeros in Matrix
+    //int entrys_;        // entrys in matrix (!= nz_ when symetric!)
     bool isSymmetric_;
     bool isRowSorted_, isColSorted_;
 
@@ -65,29 +66,11 @@ std::ostream& operator<<( std::ostream& os, std::vector<T>& vec )
 
 std::ostream& operator<<( std::ostream& os, std::tuple<int,int,double> data );
 
-inline void sortByRow(MMreader& mmMatrix)
-{
-/*  std::cout << "sort by row" << std::endl;*/
+void sortByRow(MMreader& mmMatrix);
 
-    std::vector< std::tuple<int,int,double> > & matrix = mmMatrix.getMatrx(); 
+std::vector<int> getValsPerRow(MMreader& mmMatrix);
 
-    // first sort by cll
-    std::sort( matrix.begin(), matrix.end(),
-                [](std::tuple<int,int,double> const &a,
-                    std::tuple<int,int,double> const &b)
-                    {return std::get<1>(a) < std::get<1>(b);}
-                );
-    // then (stable!) sort by row
-    std::stable_sort( matrix.begin(), matrix.end(),
-                        [](std::tuple<int,int,double> const &a,
-                            std::tuple<int,int,double> const &b)
-                        {return std::get<0>(a) < std::get<0>(b);}
-                    );
-
-    mmMatrix.isRowSorted(true);
-
-/*  std::cout << matrix;*/
-}
+std::vector<int> getOffsets(std::vector<int>& valuesPerLine);
 
 template <typename T>
 bool operator ==(std::vector<T> const& a, std::vector<T> const& b)

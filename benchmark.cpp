@@ -22,10 +22,18 @@ int main(int argc, char *argv[])
     //read MM matraix from file and create CSR matrix
     MMreader mmMatrix (argv[1]);
     CSR_Matrix csr_matrix(mmMatrix);
+    int const length = csr_matrix.getRows();
 
-    // create vectors
-    std::vector<double> x (csr_matrix.getRows(), 42.);
-    std::vector<double> y (csr_matrix.getRows(), 0.);
+    // create vectors (NUMA awareness!)
+    std::vector<double> x,y;
+    x.reserve(length);
+    y.reserve(length);
+#pragma omp parallel for schedule(static)
+    for (int i=0; i<length; ++i)
+    {
+        x.push_back(42.);
+        y.push_back(0.);
+    }
 
     auto messerment = spMV( csr_matrix, x.data(), y.data() );
 
