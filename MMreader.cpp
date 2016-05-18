@@ -110,21 +110,13 @@ MMreader::MMreader(char const *fileName)
 
 
 /*****Free Functions*MMreader*************************************************/
-std::ostream& operator<<( std::ostream& os, std::tuple<int,int,double> data )
-{
-    os << "(" << std::get<0>(data) << "," << std::get<1>(data) << ") "
-       << std::get<2>(data);
-
-    return os;
-}
-
 void sortByRow(MMreader& mmMatrix)
 {
 /*  std::cout << "sort by row" << std::endl;*/
 
     std::vector< std::tuple<int,int,double> > & matrix = mmMatrix.getMatrx(); 
 
-    // first sort by cll
+    // first sort by coll
     std::sort( matrix.begin(), matrix.end(),
                 [](std::tuple<int,int,double> const &a,
                     std::tuple<int,int,double> const &b)
@@ -142,16 +134,15 @@ void sortByRow(MMreader& mmMatrix)
 /*  std::cout << matrix;*/
 }
 
-//TODO return type: uniqi ptr, ref, normal type, rvalue reff
-std::vector<int> getValsPerRow(MMreader& mmMatrix)
+std::vector<int> getValsPerRow(MMreader const & mmMatrix)
 {
     std::vector<int> valsPerRow(mmMatrix.getRows(), 0);
 
-    std::vector< std::tuple<int,int,double> > & mmData = mmMatrix.getMatrx();
+    std::vector< std::tuple<int,int,double> > const & mmData = mmMatrix.getMatrx();
 
     for (auto it=mmData.begin(); it!=mmData.end(); ++it)
     {
-        int    row = std::get<0>(*it);
+        int row = std::get<0>(*it);
 
         ++valsPerRow[row];
     }
@@ -159,8 +150,23 @@ std::vector<int> getValsPerRow(MMreader& mmMatrix)
     return valsPerRow;
 }
 
-//TODO return type
-std::vector<int> getOffsets(std::vector<int>& valuesPerRow)
+std::vector< std::tuple<int,int> > getRowLengths(MMreader const & mmMatrix)
+{
+    std::vector< std::tuple<int,int> > rowLengths;
+    rowLengths.reserve(mmMatrix.getRows());
+
+    std::vector<int> valuesPerRow = getValsPerRow(mmMatrix);
+
+    for (int row=0; row<mmMatrix.getRows(); ++row)
+    {
+        rowLengths.emplace_back( std::forward_as_tuple(row, valuesPerRow[row]) );
+    }
+
+    return rowLengths;
+
+}
+
+std::vector<int> getOffsets(std::vector<int> const & valuesPerRow)
 {
     std::vector<int> offsets;
     offsets.reserve(valuesPerRow.size() + 1);
@@ -168,9 +174,30 @@ std::vector<int> getOffsets(std::vector<int>& valuesPerRow)
     offsets.push_back(0);
 
     //TODO parrallel (vor c++17(partition_scan) per hand)
+    //TODO [i]+= [i-1]??? (nicht parallel)
     std::partial_sum(valuesPerRow.begin(), valuesPerRow.end(),
                      std::back_inserter(offsets));
 
 
     return offsets;
+}
+
+
+
+
+
+/*****Output and Comperison Helper Funktions**********************************/
+std::ostream& operator<<( std::ostream& os, std::tuple<int,int> data )
+{
+    os << "(" << std::get<0>(data) << "," << std::get<1>(data) << ") ";
+
+    return os;
+}
+
+std::ostream& operator<<( std::ostream& os, std::tuple<int,int,double> data )
+{
+    os << "(" << std::get<0>(data) << "," << std::get<1>(data) << ") "
+       << std::get<2>(data);
+
+    return os;
 }

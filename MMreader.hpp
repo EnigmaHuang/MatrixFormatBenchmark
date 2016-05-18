@@ -52,6 +52,23 @@ private:
 
 
 /*****Free Functions*MMreader*************************************************/
+void sortByRow(MMreader& mmMatrix);
+
+std::vector<int> getValsPerRow(MMreader const & mmMatrix);
+
+std::vector< std::tuple<int,int> > getRowLengths(MMreader const & mmMatrix);
+
+std::vector<int> getOffsets(std::vector<int> const & valuesPerLine);
+
+
+
+
+
+/*****Output and Comperison Helper Funktions**********************************/
+std::ostream& operator<<( std::ostream& os, std::tuple<int,int> data );
+std::ostream& operator<<( std::ostream& os, std::tuple<int,int,double> data );
+
+
 template <typename T>
 std::ostream& operator<<( std::ostream& os, std::vector<T>& vec )
 {
@@ -64,29 +81,6 @@ std::ostream& operator<<( std::ostream& os, std::vector<T>& vec )
     return os;
 }
 
-std::ostream& operator<<( std::ostream& os, std::tuple<int,int,double> data );
-
-void sortByRow(MMreader& mmMatrix);
-
-std::vector<int> getValsPerRow(MMreader& mmMatrix);
-
-std::vector<int> getOffsets(std::vector<int>& valuesPerLine);
-
-template <typename T>
-bool operator ==(std::vector<T> const& a, std::vector<T> const& b)
-{
-    bool status = a.size() == b.size();
-
-    if (!status)
-        return status;
-
-    for (size_t i=0; i<a.size(); ++i)
-    {
-        status = (a[i] == b[i]) && status;
-    }
-
-    return status;
-}
 
 template <typename T>
 bool operator ==(std::vector<T> const& a, T const& b)
@@ -105,6 +99,22 @@ template <typename T>
 bool operator ==(T const& a, std::vector<T> const& b)
 {
     return b==a;
+}
+
+template <typename T>
+bool operator ==(std::vector<T> const& a, std::vector<T> const& b)
+{
+    bool status = a.size() == b.size();
+
+    if (!status)
+        return status;
+
+    for (size_t i=0; i<a.size(); ++i)
+    {
+        status = (a[i] == b[i]) && status;
+    }
+
+    return status;
 }
 
 #endif

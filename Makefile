@@ -8,10 +8,10 @@ RM       = rm -f
 
 BIN                 = test_seriell test_omp benchmark_seriell benchmark_omp
 OFILES_example      = mmio/mmio.o example_read.o
-OFILES_testSer      = mmio/mmio.o MMreader.o CSRMatrix_ser.o timing/timing.o test.o
-OFILES_testOMP      = mmio/mmio.o MMreader.o CSRMatrix_omp.o timing/timing.o test.o
-OFILES_benchmarkSer = mmio/mmio.o MMreader.o CSRMatrix_ser.o timing/timing.o benchmark.o
-OFILES_benchmarkOMP = mmio/mmio.o MMreader.o CSRMatrix_omp.o timing/timing.o benchmark.o
+OFILES_testSer      = mmio/mmio.o MMreader.o CSRMatrix_ser.o SellCSigma_ser.o timing/timing.o test.o
+OFILES_testOMP      = mmio/mmio.o MMreader.o CSRMatrix_omp.o SellCSigma_omp.o timing/timing.o test.o
+OFILES_benchmarkSer = mmio/mmio.o MMreader.o CSRMatrix_ser.o SellCSigma_ser.o timing/timing.o benchmark.o
+OFILES_benchmarkOMP = mmio/mmio.o MMreader.o CSRMatrix_omp.o SellCSigma_omp.o timing/timing.o benchmark.o
 
 
 .PHONY: all clean
@@ -48,13 +48,18 @@ timing/timing.o: timing/timing.c timing/timing.h
 .cpp.o:
 	$(CPP) $(CPPFLAGS) -c $<
 
-CSRMatrix_ser.o: CSRMatrix.cpp MMreader.hpp
+CSRMatrix_ser.o: CSRMatrix.cpp CSRMatrix.hpp MMreader.hpp
 	$(CPP) $(CPPFLAGS) -c -o $@ $<
-CSRMatrix_omp.o: CSRMatrix.cpp MMreader.hpp
+CSRMatrix_omp.o: CSRMatrix.cpp CSRMatrix.hpp MMreader.hpp
+	$(CPP) $(CPPFLAGS) $(OMPFLAG) -c -o $@ $<
+
+SellCSigma_ser.o: SellCSigma.cpp SellCSigma.hpp MMreader.hpp
+	$(CPP) $(CPPFLAGS) -c -o $@ $<
+SellCSigma_omp.o: SellCSigma.cpp SellCSigma.hpp MMreader.hpp
 	$(CPP) $(CPPFLAGS) $(OMPFLAG) -c -o $@ $<
 
 
 ##########DEPENDENCIES#######################################################
-test.o: test.cpp CSRMatrix.hpp MMreader.hpp
-benchmark.o: benchmark.cpp CSRMatrix.hpp MMreader.hpp
+test.o: test.cpp CSRMatrix.hpp SellCSigma.hpp MMreader.hpp
+benchmark.o: benchmark.cpp CSRMatrix.hpp SellCSigma.hpp MMreader.hpp
 MMreader.o: MMreader.cpp MMreader.hpp mmio/mmio.h

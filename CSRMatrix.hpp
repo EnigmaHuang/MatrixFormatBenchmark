@@ -1,5 +1,5 @@
 #ifndef CRSMATRIX_HPP
-#define CSRMatrix_HPP
+#define CSRMATRIX_HPP
 
 #include <vector>
 #include <tuple>
@@ -15,19 +15,19 @@ public:
     CSR_Matrix( MMreader mmMatrix );        // constructor
     ~CSR_Matrix();                          // destructor
 
-    // We do not need copy and move symantic for this benchmark
-    CSR_Matrix(CSR_Matrix const & other) = delete;   // copy constructor
-    CSR_Matrix(CSR_Matrix && other) = delete;        // move constructor
-
-    CSR_Matrix & operator= (CSR_Matrix const & other) = delete;  // copy assignment
-    CSR_Matrix & operator= (CSR_Matrix && other) = delete;       // move assignment
-
     int getRows() const { return M_; }
     int getCols() const { return N_; }
     int getNonZeros() const { return nz_; }
     int const * getColInd() const  { return colInd_; }
     int const * getRowPtr() const  { return rowPtr_; }
     double const * getValues() const  { return val_; }
+
+    // We do not need copy and move symantic for this benchmark
+    CSR_Matrix(CSR_Matrix const & other) = delete;   // copy constructor
+    CSR_Matrix(CSR_Matrix && other) = delete;        // move constructor
+
+    CSR_Matrix & operator= (CSR_Matrix const & other) = delete;  // copy assignment
+    CSR_Matrix & operator= (CSR_Matrix && other) = delete;       // move assignment
 
 private:
     int M_, N_, nz_;
