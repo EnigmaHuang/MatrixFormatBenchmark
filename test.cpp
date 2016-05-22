@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
 
 
 
-    SellCSigma_Matrix identity_sell_1_1 (identity,1,1);
+    SellCSigma_Matrix<3> identity_sell_1_1 (identity,4);
 
     std::vector<double> m,n;
     
@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
     //std::cout << n;
     assert (m == n);
 
-    std::cout << "Identity_sell-1-1: sucses!" << std::endl;
+    std::cout << "Identity_sell-3-4: sucses!" << std::endl;
     std::cout << "Runtime: " << std::get<0>(messerment_sell_1_1) << "sec "
               << "Perfomance: " << std::get<1>(messerment_sell_1_1) << "Flops/sec"
               << std::endl;
@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
 
 
 
-    SellCSigma_Matrix band_sell (band,2,4);
+    SellCSigma_Matrix<2> band_sell (band,4);
 
     std::vector<double> m,n;
     
@@ -163,7 +163,7 @@ int main(int argc, char *argv[])
 
 
 
-    SellCSigma_Matrix brockenBand_sell (brockenBand, 4, 100);
+    SellCSigma_Matrix<4> brockenBand_sell (brockenBand, 100);
 
     std::vector<double> m,n;
     

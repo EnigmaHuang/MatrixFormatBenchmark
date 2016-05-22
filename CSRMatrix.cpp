@@ -25,7 +25,7 @@ CSR_Matrix::CSR_Matrix( MMreader mmMatrix )
     std::vector<int> offsets      = getOffsets(valuesPerRow);
 
     // convert input Format to csr format (NUMA awareness!)
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(runtime)
     for (int rowID=0; rowID<getRows(); ++rowID)
     {
         rowPtr_[rowID] = offsets[rowID];
@@ -155,7 +155,7 @@ std::tuple<double,double> spMV( CSR_Matrix const & A, double const *x, double *y
         LIKWID_MARKER_THREADINIT;
         LIKWID_MARKER_START("SpMV_CSR");
 
-#pragma omp for schedule(static)
+#pragma omp for schedule(runtime)
         // loop over all rows
         for (int rowID=0; rowID<rows; ++rowID)
         {
