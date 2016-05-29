@@ -19,7 +19,6 @@ extern "C"
 
 
 /*****Class SELL-C-Sigam******************************************************/
-//TODO sigma als template parameter?
 template <int C>
 class SellCSigma_Matrix
 {
@@ -38,6 +37,7 @@ public:
     int const * getChankLength() const  { return chunkLength_; }
     int const * getPermutation() const { return permute_; }
     double const * getValues() const  { return val_; }
+    int getOverhead() const {return overhead;}
 
     // We do not need copy and move symantic for this benchmark
     SellCSigma_Matrix(SellCSigma_Matrix const & other) = delete;   // copy constructor
@@ -54,17 +54,17 @@ private:
     int *permute_;          // Sell-C-sigma row ID -> orginal row ID
     int *permuteMinus1_;    // orginal row ID -> Sell row ID
     double* val_;
+    int overhead;           // additional stored values to fill chunks
 };
 
 
+// constructor
 template <int C>
-SellCSigma_Matrix<C>::SellCSigma_Matrix( MMreader mmMatrix,
-                                      int const sigma )
+SellCSigma_Matrix<C>::SellCSigma_Matrix( MMreader mmMatrix, int const sigma )
 :sigma_(sigma)
 ,M_(mmMatrix.getRows()), N_(mmMatrix.getCols())
 ,nz_(mmMatrix.getNonZeros()), numberOfChunks_((M_-1)/C+1)
 ,colInd_(nullptr)
-//,chunkPtr_(new int[(M_-1)/C+1]), chunkLength_(new int[(M_-1)/C+1])
 ,chunkPtr_(new int[numberOfChunks_]), chunkLength_(new int[numberOfChunks_])
 ,permute_(new int[M_]), permuteMinus1_(new int[M_])
 ,val_(nullptr)
@@ -101,7 +101,9 @@ SellCSigma_Matrix<C>::SellCSigma_Matrix( MMreader mmMatrix,
     // determine chunk length and size
     // and set backword permutation
     std::vector<int> valuesPerChunk( getNumberOfChunks() );
-#pragma omp parallel for schedule(runtime)
+#ifdef _OPENMP
+    #pragma omp parallel for schedule(runtime)
+#endif
     for (int chunk=0; chunk < getNumberOfChunks(); ++chunk)
     {
         int maxRowLenghth = 0;
@@ -124,20 +126,23 @@ SellCSigma_Matrix<C>::SellCSigma_Matrix( MMreader mmMatrix,
     }
 
 
-    // calculate memory usage and allocate memmory for values and colum IDs
+    // calculate memory usage and allocate aligned memmory for values and colum IDs
     size_t valueMemoryUsage = std::accumulate(std::begin(valuesPerChunk),
                                               std::end(valuesPerChunk),
                                               0
                                              );
-    val_    = new double[valueMemoryUsage];
-    colInd_ = new int[valueMemoryUsage];
+
+    val_    = (double*)_mm_malloc(sizeof(double)*valueMemoryUsage, 64);
+    colInd_ = (int*)_mm_malloc(sizeof(int)*valueMemoryUsage, 64);
 
 
     std::vector<int> chunkOffset = getOffsets(valuesPerChunk);
     std::vector<int> rowOffset   = getOffsets(getValsPerRow(mmMatrix));
 
     // creat Sell-C-sigma data
-#pragma omp parallel for schedule(runtime)
+#ifdef _OPENMP
+    #pragma omp parallel for schedule(runtime)
+#endif
     for (int chunk=0; chunk < getNumberOfChunks(); ++chunk)
     {
         chunkPtr_[chunk] = chunkOffset[chunk];
@@ -156,7 +161,7 @@ SellCSigma_Matrix<C>::SellCSigma_Matrix( MMreader mmMatrix,
                 double val;
 
                 if ( j < std::get<1>(rowLengths[row]) )
-                {   // matrix values
+                {   // fill with matrix values
                     int id = rowOffset[ permute_[row] ] + j;
 
                     val = std::get<2>( mmData[id] );
@@ -166,6 +171,7 @@ SellCSigma_Matrix<C>::SellCSigma_Matrix( MMreader mmMatrix,
                 {   // fill chunk with 0
                     val = 0.;
                     col = 0; //TODO irgendwas kluges hier? zB row?  (out of bounds?!)
+                    ++overhead;
                 }
 
                 val_   [chunkPtr_[chunk] + i + j*getChunkSize()] = val;
@@ -187,18 +193,19 @@ SellCSigma_Matrix<C>::SellCSigma_Matrix( MMreader mmMatrix,
     */
 }
 
+// destructor
 template<int C>
 SellCSigma_Matrix<C>::~SellCSigma_Matrix()
 {
-    delete[] val_;
-    delete[] permute_;
-    delete[] chunkLength_;
     delete[] chunkPtr_;
-    delete[] colInd_;
+    delete[] chunkLength_;
+    delete[] permute_;
+    delete[] permuteMinus1_;
+    _mm_free(val_);
+    _mm_free(colInd_);
 }
 
 /*****Free Functions*CSR_MATRIX***********************************************/
-//std::ostream& operator<<(std::ostream& os, SellCSigma_Matrix const & matrix);
 
 /**
  * sparse Matrix-Vector multiplication
@@ -214,35 +221,31 @@ SellCSigma_Matrix<C>::~SellCSigma_Matrix()
  * of the kernel
  */
 //TODO rename aAxpby
-template< int C, bool PLUSY=false>
-std::tuple<double,double> spMV( SellCSigma_Matrix<C> const & A,
-                                double const *x,
-                                double *y,
-                                double alpha=1.,    //TODO reicht das zur runtime wenn das gleich 1 ist?
-                                double beta=0.)
+template< int C, bool PLUSy=false>
+void spMV( SellCSigma_Matrix<C> const & A,
+           double const * x,
+           double * y,
+           double alpha=1.,
+           double beta=0.)
 {
-    double const *val        = A.getValues();
-    int const *colInd        = A.getColInd();
-    int const *chunkPtr      = A.getChankPtr();
-    int const *chunkLength   = A.getChankLength();
+    double const * val        = A.getValues();
+    int const * chunkPtr      = A.getChankPtr();
+    int const * chunkLength   = A.getChankLength();
+    int const * colInd        = A.getColInd();
     int const rows           = A.getRows();
     int const nonZeros       = A.getNonZeros();
     int const numberOfChunks = A.getNumberOfChunks();
     int const chunkSize      = C;
-//#define chunkSize C
 
-    double timeing_start, timeing_end, runtime, cpuTime;
-    double performance;
-
-#pragma omp parallel
-    { // open paralel region
-        timing(&timeing_start, &cpuTime);
-
+//#pragma omp parallel
+    //{ // open paralel region
         LIKWID_MARKER_THREADINIT;
         LIKWID_MARKER_START("SpMV_Sell-C-sigma");
 
-#pragma omp for schedule(runtime)
-    for (int chunk=0; chunk < numberOfChunks; ++chunk)
+#ifdef _OPENMP
+    #pragma omp for schedule(runtime)
+#endif
+    for (int chunk=0; chunk < rows/chunkSize; ++chunk)
     {
         int chunkOffset = chunkPtr[chunk];
         double tmp[chunkSize] {};
@@ -250,9 +253,42 @@ std::tuple<double,double> spMV( SellCSigma_Matrix<C> const & A,
         // do MatVecMul
         for (int j=0; j<chunkLength[chunk]; ++j)
         {
-            //TODO unrool (überprüfen)
-            //TODO compiler flag march native?
-            for (int i=0,           row=chunk*chunkSize;
+            #pragma simd
+            for (int i=0; i<chunkSize; ++i)
+            {
+                tmp[i] += val      [chunkOffset + j*chunkSize + i]
+                        * x[ colInd[chunkOffset + j*chunkSize + i] ];
+            }
+        }
+        
+        // write back result of y = alpha Ax + beta y
+        for (int i=0,           row=chunk*chunkSize;
+                 i<chunkSize && row<rows;
+               ++i,           ++row
+            )
+        {
+            if (PLUSy)
+                y[row] = alpha * tmp[i] + beta * y[row];
+            else
+                y[row] = alpha * tmp[i];        //TODO nontemporal stores
+        }
+    }
+
+    // loop remainder   -> last (incompleat chunk)
+#ifdef _OPENMP
+    #pragma omp single
+#endif
+    if (rows/chunkSize != numberOfChunks)
+    {
+        assert (rows/chunkSize == numberOfChunks-1);
+
+        int chunkOffset = chunkPtr[numberOfChunks-1];
+        double tmp[chunkSize] {};
+
+        // do MatVecMul
+        for (int j=0; j<chunkLength[numberOfChunks-1]; ++j)
+        {
+            for (int i=0,           row=(numberOfChunks-1)*chunkSize;
                      i<chunkSize && row<rows;
                    ++i,           ++row
                 )
@@ -263,30 +299,22 @@ std::tuple<double,double> spMV( SellCSigma_Matrix<C> const & A,
         }
         
         // write back result of y = alpha Ax + beta y
-        for (int i=0,           row=chunk*chunkSize;
-                    i<chunkSize && row<rows;
-                ++i,           ++row
+        for (int i=0,           row=(numberOfChunks-1)*chunkSize;
+                 i<chunkSize && row<rows;
+                ++i,          ++row
             )
         {
-            if (PLUSY)
+            if (PLUSy)
                 y[row] = alpha * tmp[i] + beta * y[row];
             else
                 y[row] = alpha * tmp[i];
         }
-
     }
 
         LIKWID_MARKER_STOP("SpMV_Sell-C-sigma");
 
-        timing(&timeing_end, &cpuTime);
-        runtime = timeing_end - timeing_start;
+    //} // close paralel region
 
-        int flops = nonZeros*2 - rows;
-        performance = flops/runtime;
-
-    } // close paralel region
-
-    return std::forward_as_tuple(runtime, performance);
 }
 
 #endif

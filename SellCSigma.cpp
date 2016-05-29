@@ -1,4 +1,3 @@
-#include "SellCSigma.hpp"
 
 /*****Implementation Sell-C-Sigma*********************************************/
 

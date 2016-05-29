@@ -25,7 +25,9 @@ CSR_Matrix::CSR_Matrix( MMreader mmMatrix )
     std::vector<int> offsets      = getOffsets(valuesPerRow);
 
     // convert input Format to csr format (NUMA awareness!)
-#pragma omp parallel for schedule(runtime)
+#ifdef _OPENMP
+    #pragma omp parallel for schedule(runtime)
+#endif
     for (int rowID=0; rowID<getRows(); ++rowID)
     {
         rowPtr_[rowID] = offsets[rowID];
@@ -137,7 +139,12 @@ std::ostream& operator<<( std::ostream& os, CSR_Matrix const & matrix )
     return os;
 }
 
-std::tuple<double,double> spMV( CSR_Matrix const & A, double const *x, double *y )
+void spMV( CSR_Matrix const & A,
+           double const *x,
+           double *y,
+           double alpha,
+           double beta
+         )
 {
     double const *val  = A.getValues();
     int const *colInd  = A.getColInd();
@@ -145,43 +152,36 @@ std::tuple<double,double> spMV( CSR_Matrix const & A, double const *x, double *y
     int const rows     = A.getRows();
     int const nonZeros = A.getNonZeros();
 
-    double timeing_start, timeing_end, runtime, cpuTime;
-    double performance;
-
-#pragma omp parallel
-    { // open paralel region
-        timing(&timeing_start, &cpuTime);
-
+//#pragma omp parallel
+    //{ // open paralel region
         LIKWID_MARKER_THREADINIT;
         LIKWID_MARKER_START("SpMV_CSR");
 
-#pragma omp for schedule(runtime)
         // loop over all rows
+#ifdef _OPENMP
+        #pragma omp for schedule(runtime)
+#endif
         for (int rowID=0; rowID<rows; ++rowID)
         {
             int id = rowPtr[rowID];
 
             // set y vec to 0
-            y[rowID] = 0;
+            //y[rowID] = 0;
+            double tmp = 0.;
 
             // loop over all elements in row
             for (; id<rowPtr[rowID+1]; ++id)
             {
-                y[rowID] += val[id] * x[ colInd[id] ];
-
+                //y[rowID] += val[id] * x[ colInd[id] ];
+                tmp += val[id] * x[ colInd[id] ];
             }
+
+            y[rowID] = alpha * tmp + beta * y[rowID];
         }
 
         LIKWID_MARKER_STOP("SpMV_CSR");
 
-        timing(&timeing_end, &cpuTime);
-        runtime = timeing_end - timeing_start;
+    //} // close paralel region
 
-        int flops = nonZeros*2 - rows;
-        performance = flops/runtime;
-
-    } // close paralel region
-
-    return std::make_tuple(runtime, performance);
 }
 

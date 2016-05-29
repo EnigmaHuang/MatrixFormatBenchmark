@@ -49,6 +49,10 @@ std::ostream& operator<<(std::ostream& os, CSR_Matrix const & matrix);
  * returns a tuple containg the  runtime and the performance (flops/time)
  * of the kernel
  */
-std::tuple<double,double> spMV( CSR_Matrix const & A, double const *x, double *y );
+void spMV( CSR_Matrix const & A,
+           double const *x,
+           double *y,
+           double alpha=1.,
+           double beta=0.);
 
 #endif

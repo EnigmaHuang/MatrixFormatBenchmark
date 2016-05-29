@@ -26,15 +26,15 @@ int main(int argc, char *argv[])
         y.push_back(42);
     }
 
-    auto messerment_csr = spMV( identity_csr, x.data(), y.data() );
+#ifdef _OPENMP
+    #pragma omp parallel
+#endif
+     spMV( identity_csr, x.data(), y.data() );
 
     assert (x == y);
     //std::cout << x;
 
     std::cout << "Identity_CSR: sucses!" << std::endl;
-    std::cout << "Runtime: " << std::get<0>(messerment_csr) << "sec "
-              << "Perfomance: " << std::get<1>(messerment_csr) << "Flops/sec"
-              << std::endl;
 
 
 
@@ -49,16 +49,16 @@ int main(int argc, char *argv[])
         n.push_back(42);
     }
 
-    auto messerment_sell_1_1 = spMV( identity_sell_1_1, m.data(), n.data() );
+#ifdef _OPENMP
+    #pragma omp parallel
+#endif
+    spMV( identity_sell_1_1, m.data(), n.data() );
 
     //std::cout << m;
     //std::cout << n;
     assert (m == n);
 
     std::cout << "Identity_sell-3-4: sucses!" << std::endl;
-    std::cout << "Runtime: " << std::get<0>(messerment_sell_1_1) << "sec "
-              << "Perfomance: " << std::get<1>(messerment_sell_1_1) << "Flops/sec"
-              << std::endl;
     }
 
 /****TEST: MORE COMPLEX MAXTRIX***********************************************/
@@ -75,16 +75,16 @@ int main(int argc, char *argv[])
         y.push_back(42);
     }
 
-    auto messerment_csr = spMV( band_csr, x.data(), y.data() );
+#ifdef _OPENMP
+    #pragma omp parallel
+#endif
+    spMV( band_csr, x.data(), y.data() );
 
     //assert (y == x);
     //assert (y == 1.);
     //std::cout << x;
 
     std::cout << "Band CSR: sucses!" << std::endl;
-    std::cout << "Runtime: " << std::get<0>(messerment_csr) << "sec "
-              << "Performance: " << std::get<1>(messerment_csr) << "Flops/sec"
-              << std::endl;
 
 
 
@@ -99,16 +99,16 @@ int main(int argc, char *argv[])
         n.push_back(42);
     }
 
-    auto messerment_sell = spMV( band_sell, m.data(), n.data() );
+#ifdef _OPENMP
+    #pragma omp parallel
+#endif
+    spMV( band_sell, m.data(), n.data() );
 
     assert (m == n);
     assert (n == 1.);
     //std::cout << x;
 
     std::cout << "Band Sell-2-4: sucses!" << std::endl;
-    std::cout << "Runtime: " << std::get<0>(messerment_sell) << "sec "
-              << "Performance: " << std::get<1>(messerment_sell) << "Flops/sec"
-              << std::endl;
     }
 
 
@@ -126,16 +126,16 @@ int main(int argc, char *argv[])
         y.push_back(42);
     }
 
-    auto messerment = spMV( band_sym_csr, x.data(), y.data() );
+#ifdef _OPENMP
+    #pragma omp parallel
+#endif
+    spMV( band_sym_csr, x.data(), y.data() );
 
     assert (y == x);
     assert (y == 1.);
     //std::cout << x;
 
     std::cout << "Symmetric CSR: sucses!" << std::endl;
-    std::cout << "Runtime: " << std::get<0>(messerment) << "sec "
-              << "Performance: " << std::get<1>(messerment) << "Flops/sec"
-              << std::endl;
     }
 
 
@@ -153,6 +153,9 @@ int main(int argc, char *argv[])
         y.push_back(42);
     }
 
+#ifdef _OPENMP
+    #pragma omp parallel
+#endif
     spMV( brockenBand_csr, x.data(), y.data() );
 
     if ( !(y==x) && !(y==1.) )
@@ -173,6 +176,9 @@ int main(int argc, char *argv[])
         n.push_back(42);
     }
 
+#ifdef _OPENMP
+    #pragma omp parallel
+#endif
     spMV( brockenBand_sell, m.data(), n.data() );
 
     if ( !(m==n) && !(n==1.) )

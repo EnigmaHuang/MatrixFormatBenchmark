@@ -1,6 +1,7 @@
-CC       = gcc
-CPP      = g++
-CFLAGS   = -O3 -Wall -Winline -Wshadow -ansi -g
+CC       = icc
+CPP      = icpc
+#CFLAGS   = -O3 -march=native -Wall -Wshadow -ansi -g -qopt-report=5
+CFLAGS   = -O3 -xhost -Wall -Wshadow -ansi -g -qopt-report=5
 CPPFLAGS = $(CFLAGS) -std=c++11
 LDFLAGS  = 
 OMPFLAG  = -fopenmp
@@ -11,7 +12,7 @@ OFILES_example      = mmio/mmio.o example_read.o
 OFILES_testSer      = mmio/mmio.o MMreader.o CSRMatrix_ser.o SellCSigma_ser.o timing/timing.o test.o
 OFILES_testOMP      = mmio/mmio.o MMreader.o CSRMatrix_omp.o SellCSigma_omp.o timing/timing.o test.o
 OFILES_benchmarkSer = mmio/mmio.o MMreader.o CSRMatrix_ser.o SellCSigma_ser.o timing/timing.o benchmark.o
-OFILES_benchmarkOMP = mmio/mmio.o MMreader.o CSRMatrix_omp.o SellCSigma_omp.o timing/timing.o benchmark.o
+OFILES_benchmarkOMP = mmio/mmio.o MMreader.o CSRMatrix_omp.o SellCSigma_omp.o timing/timing.o benchmark_omp.o
 
 
 .PHONY: all clean
@@ -19,7 +20,7 @@ OFILES_benchmarkOMP = mmio/mmio.o MMreader.o CSRMatrix_omp.o SellCSigma_omp.o ti
 all: $(BIN)
 
 clean:
-	$(RM) $(BIN) $(OFILES_example) $(OFILES_testSer) $(OFILES_testOMP) $(OFILES_benchmarkSer) $(OFILES_benchmarkOMP)
+	$(RM) $(BIN) $(OFILES_example) $(OFILES_testSer) $(OFILES_testOMP) $(OFILES_benchmarkSer) $(OFILES_benchmarkOMP) *.optrpt
 
 
 ##########BIN#################################################################
@@ -58,8 +59,11 @@ SellCSigma_ser.o: SellCSigma.cpp SellCSigma.hpp MMreader.hpp
 SellCSigma_omp.o: SellCSigma.cpp SellCSigma.hpp MMreader.hpp
 	$(CPP) $(CPPFLAGS) $(OMPFLAG) -c -o $@ $<
 
+benchmark_omp.o: benchmark.cpp CSRMatrix.hpp SellCSigma.hpp MMreader.hpp
+	$(CPP) $(CPPFLAGS) $(OMPFLAG) -c -o $@ $<
+
 
 ##########DEPENDENCIES#######################################################
 test.o: test.cpp CSRMatrix.hpp SellCSigma.hpp MMreader.hpp
-benchmark.o: benchmark.cpp CSRMatrix.hpp SellCSigma.hpp MMreader.hpp
+benchmark.o: 
 MMreader.o: MMreader.cpp MMreader.hpp mmio/mmio.h
