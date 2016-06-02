@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
     MMreader mmMatrix (argv[1]);
 
 
-    int const revisions = 100000;
+    int const revisions = 10000;
 
     /******CSR*******************************************************/
     {
@@ -111,11 +111,13 @@ int main(int argc, char *argv[])
     }
 
     long long flops    = sell_matrix.getNonZeros()*2 ;
-    long long flopsWOh = (sell_matrix.getNonZeros()+sell_matrix.getOverhead())*2 ;
+    double overhead    = static_cast<double>(sell_matrix.getOverhead()) /
+                         (sell_matrix.getNonZeros()+sell_matrix.getOverhead());
+
 
     std::cout << "runtime Sell-4-16: " << runtime << " sec.:"
               << " performance: " << flops*revisions / runtime
-              << " performance with overhead: " << flopsWOh*revisions / runtime
+              << " overhead: " << overhead*100 << "%"
               << std::endl;
 
     //auto messerment_sell = spMV( sell_matrix, m.data(), n.data() );

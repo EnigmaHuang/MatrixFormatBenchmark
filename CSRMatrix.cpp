@@ -170,6 +170,7 @@ void spMV( CSR_Matrix const & A,
             double tmp = 0.;
 
             // loop over all elements in row
+            // TODO pragma simd
             for (; id<rowPtr[rowID+1]; ++id)
             {
                 //y[rowID] += val[id] * x[ colInd[id] ];
