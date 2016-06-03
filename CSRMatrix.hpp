@@ -6,6 +6,11 @@
 
 #include "MMreader.hpp"
 
+extern "C"
+{
+#include <likwid.h>
+#include "timing/timing.h"
+}
 
 
 /*****Class CSR_MATRIX********************************************************/
@@ -49,10 +54,53 @@ std::ostream& operator<<(std::ostream& os, CSR_Matrix const & matrix);
  * returns a tuple containg the  runtime and the performance (flops/time)
  * of the kernel
  */
+template<bool PLUSy=false>
 void spMV( CSR_Matrix const & A,
            double const *x,
            double *y,
            double alpha=1.,
-           double beta=0.);
+           double beta=0.)
+{
+    double const *val  = A.getValues();
+    int const *colInd  = A.getColInd();
+    int const *rowPtr  = A.getRowPtr();
+    int const rows     = A.getRows();
+    int const nonZeros = A.getNonZeros();
+
+//#pragma omp parallel
+    //{ // open paralel region
+        LIKWID_MARKER_THREADINIT;
+        LIKWID_MARKER_START("SpMV_CSR");
+
+        // loop over all rows
+#ifdef _OPENMP
+        #pragma omp for schedule(runtime)
+#endif
+        for (int rowID=0; rowID<rows; ++rowID)
+        {
+            int id = rowPtr[rowID];
+
+            // set y vec to 0
+            //y[rowID] = 0;
+            double tmp = 0.;
+
+            // loop over all elements in row
+            for (; id<rowPtr[rowID+1]; ++id)
+            {
+                //y[rowID] += val[id] * x[ colInd[id] ];
+                tmp += val[id] * x[ colInd[id] ];
+            }
+
+            if(PLUSy)
+                y[rowID] = alpha * tmp + beta * y[rowID];
+            else
+                y[rowID] = alpha * tmp;
+        }
+
+        LIKWID_MARKER_STOP("SpMV_CSR");
+
+    //} // close paralel region
+
+}
 
 #endif

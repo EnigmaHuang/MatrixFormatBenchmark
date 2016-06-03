@@ -8,10 +8,6 @@
 
 
 
-//TODO performace
-//TODO andere Formate
-//TODO MEMory alignment
-
 int main(int argc, char *argv[])
 {
     if (argc < 2)

@@ -32,12 +32,12 @@ public:
     int getCols() const { return N_; }
     int getNonZeros() const { return nz_; }
     int getNumberOfChunks() const { return numberOfChunks_; }
+    int getOverhead() const { return overhead_; }
     int const * getColInd() const  { return colInd_; }
     int const * getChankPtr() const  { return chunkPtr_; }
     int const * getChankLength() const  { return chunkLength_; }
     int const * getPermutation() const { return permute_; }
     double const * getValues() const  { return val_; }
-    int getOverhead() const {return overhead;}
 
     // We do not need copy and move symantic for this benchmark
     SellCSigma_Matrix(SellCSigma_Matrix const & other) = delete;   // copy constructor
@@ -47,14 +47,13 @@ public:
     SellCSigma_Matrix & operator= (SellCSigma_Matrix && other) = delete;       // move assignment
 
 private:
+    //TODO std::vector
     int const sigma_;
-    int M_, N_, nz_, numberOfChunks_;
+    int M_, N_, nz_, numberOfChunks_, overhead_;
     int *colInd_, *chunkPtr_, *chunkLength_;
-    //TODO neue namen!
-    int *permute_;          // Sell-C-sigma row ID -> orginal row ID
+    int *permute_;          // Sell-C-sigma row ID -> orginal row ID TODO: NAMEN
     int *permuteMinus1_;    // orginal row ID -> Sell row ID
     double* val_;
-    int overhead;           // additional stored values to fill chunks
 };
 
 
@@ -104,6 +103,7 @@ SellCSigma_Matrix<C>::SellCSigma_Matrix( MMreader mmMatrix, int const sigma )
 #ifdef _OPENMP
     #pragma omp parallel for schedule(runtime)
 #endif
+    //for (int chunk=0; chunk < rows/chunkSize; ++chunk)
     for (int chunk=0; chunk < getNumberOfChunks(); ++chunk)
     {
         int maxRowLenghth = 0;
@@ -122,7 +122,6 @@ SellCSigma_Matrix<C>::SellCSigma_Matrix( MMreader mmMatrix, int const sigma )
 
         chunkLength_[chunk] = maxRowLenghth;
         valuesPerChunk[chunk] = maxRowLenghth * getChunkSize();
-
     }
 
 
@@ -132,19 +131,59 @@ SellCSigma_Matrix<C>::SellCSigma_Matrix( MMreader mmMatrix, int const sigma )
                                               0
                                              );
 
-    val_    = (double*)_mm_malloc(sizeof(double)*valueMemoryUsage, 64);
-    colInd_ = (int*)_mm_malloc(sizeof(int)*valueMemoryUsage, 64);
+    val_    = new(double[valueMemoryUsage]);
+    colInd_ = new(int   [valueMemoryUsage]);
+
+    overhead_ = valueMemoryUsage - getNonZeros();
 
 
+    // creat Sell-C-sigma data
     std::vector<int> chunkOffset = getOffsets(valuesPerChunk);
     std::vector<int> rowOffset   = getOffsets(getValsPerRow(mmMatrix));
 
-    // creat Sell-C-sigma data
 #ifdef _OPENMP
     #pragma omp parallel for schedule(runtime)
 #endif
-    for (int chunk=0; chunk < getNumberOfChunks(); ++chunk)
+    for (int chunk=0; chunk < getRows()/getChunkSize(); ++chunk)
     {
+        chunkPtr_[chunk] = chunkOffset[chunk];
+
+        for (int j=0; j<chunkLength_[chunk]; ++j)
+        {
+            for (int i=0,            row=chunk*getChunkSize();
+                 i<getChunkSize();
+                 ++i,                ++row
+                )
+            {
+                // set permutation
+                permute_[row] = std::get<0>(rowLengths[row]);
+
+                int    col;
+                double val;
+
+                if ( j < std::get<1>(rowLengths[row]) )
+                {   // fill with matrix values
+                    int id = rowOffset[ permute_[row] ] + j;
+
+                    val = std::get<2>( mmData[id] );
+                    col = std::get<1>( mmData[id] );
+                }
+                else
+                {   // fill chunk with 0
+                    val = 0.;
+                    col = 0; //TODO irgendwas kluges hier? zB row?  (out of bounds?!)
+                }
+
+                val_   [chunkPtr_[chunk] + i + j*getChunkSize()] = val;
+                colInd_[chunkPtr_[chunk] + i + j*getChunkSize()] = permuteMinus1_[col];
+            }
+        }
+    }
+
+    // loop remainder -> last (incompleat chunk)
+    if (getRows()/getChunkSize() != getNumberOfChunks())
+    {
+        int chunk = getRows() /getChunkSize();
         chunkPtr_[chunk] = chunkOffset[chunk];
 
         for (int j=0; j<chunkLength_[chunk]; ++j)
@@ -171,7 +210,6 @@ SellCSigma_Matrix<C>::SellCSigma_Matrix( MMreader mmMatrix, int const sigma )
                 {   // fill chunk with 0
                     val = 0.;
                     col = 0; //TODO irgendwas kluges hier? zB row?  (out of bounds?!)
-                    ++overhead;
                 }
 
                 val_   [chunkPtr_[chunk] + i + j*getChunkSize()] = val;
@@ -179,6 +217,7 @@ SellCSigma_Matrix<C>::SellCSigma_Matrix( MMreader mmMatrix, int const sigma )
             }
         }
     }
+
 
     /*
     std::cout << "Sell-C-sigma constructed:"
@@ -201,8 +240,10 @@ SellCSigma_Matrix<C>::~SellCSigma_Matrix()
     delete[] chunkLength_;
     delete[] permute_;
     delete[] permuteMinus1_;
-    _mm_free(val_);
-    _mm_free(colInd_);
+    delete[] val_;
+    delete[] colInd_;
+    //_mm_free(val_);
+    //_mm_free(colInd_);
 }
 
 /*****Free Functions*CSR_MATRIX***********************************************/
@@ -263,7 +304,7 @@ void spMV( SellCSigma_Matrix<C> const & A,
         
         // write back result of y = alpha Ax + beta y
         for (int i=0,           row=chunk*chunkSize;
-                 i<chunkSize && row<rows;
+                 i<chunkSize;
                ++i,           ++row
             )
         {
