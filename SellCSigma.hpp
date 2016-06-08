@@ -13,7 +13,7 @@
 
 extern "C"
 {
-#include <likwid.h>
+//#include <likwid.h>
 #include "timing/timing.h"
 }
 
@@ -280,8 +280,8 @@ void spMV( SellCSigma_Matrix<C> const & A,
 
 //#pragma omp parallel
     //{ // open paralel region
-        LIKWID_MARKER_THREADINIT;
-        LIKWID_MARKER_START("SpMV_Sell-C-sigma");
+        //LIKWID_MARKER_THREADINIT;
+        //LIKWID_MARKER_START("SpMV_Sell-C-sigma");
 
 #ifdef _OPENMP
     #pragma omp for schedule(runtime)
@@ -289,30 +289,42 @@ void spMV( SellCSigma_Matrix<C> const & A,
     for (int chunk=0; chunk < rows/chunkSize; ++chunk)
     {
         int chunkOffset = chunkPtr[chunk];
-        double tmp[chunkSize] {};
-
-        // do MatVecMul
-        for (int j=0; j<chunkLength[chunk]; ++j)
-        {
-            #pragma simd
-            for (int i=0; i<chunkSize; ++i)
-            {
-                tmp[i] += val      [chunkOffset + j*chunkSize + i]
-                        * x[ colInd[chunkOffset + j*chunkSize + i] ];
-            }
-        }
-        
-        // write back result of y = alpha Ax + beta y
+        //double tmp[chunkSize] {};
         for (int i=0,           row=chunk*chunkSize;
                  i<chunkSize;
                ++i,           ++row
             )
         {
-            if (PLUSy)
-                y[row] = alpha * tmp[i] + beta * y[row];
-            else
-                y[row] = alpha * tmp[i];        //TODO nontemporal stores
+            y[row] = 0.;
         }
+
+        // do MatVecMul
+        for (int j=0; j<chunkLength[chunk]; ++j)
+        {
+            #pragma simd
+            //for (int i=0; i<chunkSize; ++i)
+            for (int i=0,           row=chunk*chunkSize;
+                     i<chunkSize;
+                   ++i,           ++row
+                )
+            {
+                //tmp[i] += val      [chunkOffset + j*chunkSize + i]
+                y[row] += val      [chunkOffset + j*chunkSize + i]
+                        * x[ colInd[chunkOffset + j*chunkSize + i] ];
+            }
+        }
+        
+        // write back result of y = alpha Ax + beta y
+        //for (int i=0,           row=chunk*chunkSize;
+                 //i<chunkSize;
+               //++i,           ++row
+            //)
+        //{
+            //if (PLUSy)
+                //y[row] = alpha * tmp[i] + beta * y[row];
+            //else
+                //y[row] = alpha * tmp[i];        //TODO nontemporal stores
+        //}
     }
 
     // loop remainder   -> last (incompleat chunk)
@@ -352,7 +364,7 @@ void spMV( SellCSigma_Matrix<C> const & A,
         }
     }
 
-        LIKWID_MARKER_STOP("SpMV_Sell-C-sigma");
+        //LIKWID_MARKER_STOP("SpMV_Sell-C-sigma");
 
     //} // close paralel region
 

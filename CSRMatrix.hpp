@@ -8,7 +8,7 @@
 
 extern "C"
 {
-#include <likwid.h>
+//#include <likwid.h>
 #include "timing/timing.h"
 }
 
@@ -69,8 +69,8 @@ void spMV( CSR_Matrix const & A,
 
 //#pragma omp parallel
     //{ // open paralel region
-        LIKWID_MARKER_THREADINIT;
-        LIKWID_MARKER_START("SpMV_CSR");
+        //LIKWID_MARKER_THREADINIT;
+        //LIKWID_MARKER_START("SpMV_CSR");
 
         // loop over all rows
 #ifdef _OPENMP
@@ -97,7 +97,7 @@ void spMV( CSR_Matrix const & A,
                 y[rowID] = alpha * tmp;
         }
 
-        LIKWID_MARKER_STOP("SpMV_CSR");
+        //LIKWID_MARKER_STOP("SpMV_CSR");
 
     //} // close paralel region
 

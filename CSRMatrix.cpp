@@ -7,7 +7,7 @@
 
 extern "C"
 {
-#include <likwid.h>
+//#include <likwid.h>
 #include "timing/timing.h"
 }
 
