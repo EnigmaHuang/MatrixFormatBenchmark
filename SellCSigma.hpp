@@ -289,42 +289,43 @@ void spMV( SellCSigma_Matrix<C> const & A,
     for (int chunk=0; chunk < rows/chunkSize; ++chunk)
     {
         int chunkOffset = chunkPtr[chunk];
-        //double tmp[chunkSize] {};
-        for (int i=0,           row=chunk*chunkSize;
-                 i<chunkSize;
-               ++i,           ++row
-            )
-        {
-            y[row] = 0.;
-        }
-
-        // do MatVecMul
-        for (int j=0; j<chunkLength[chunk]; ++j)
-        {
-            #pragma simd
-            //for (int i=0; i<chunkSize; ++i)
-            for (int i=0,           row=chunk*chunkSize;
-                     i<chunkSize;
-                   ++i,           ++row
-                )
-            {
-                //tmp[i] += val      [chunkOffset + j*chunkSize + i]
-                y[row] += val      [chunkOffset + j*chunkSize + i]
-                        * x[ colInd[chunkOffset + j*chunkSize + i] ];
-            }
-        }
-        
-        // write back result of y = alpha Ax + beta y
+        double tmp[chunkSize] {};
         //for (int i=0,           row=chunk*chunkSize;
                  //i<chunkSize;
                //++i,           ++row
             //)
         //{
-            //if (PLUSy)
-                //y[row] = alpha * tmp[i] + beta * y[row];
-            //else
-                //y[row] = alpha * tmp[i];        //TODO nontemporal stores
+            //y[row] = 0.;
         //}
+
+        // do MatVecMul
+        for (int j=0; j<chunkLength[chunk]; ++j)
+        {
+            #pragma simd
+            for (int i=0; i<chunkSize; ++i)
+            //for (int i=0,           row=chunk*chunkSize;
+                     //i<chunkSize;
+                   //++i,           ++row
+                //)
+            {
+                tmp[i] += val      [chunkOffset + j*chunkSize + i]
+                //y[row] += val      [chunkOffset + j*chunkSize + i]
+                        * x[ colInd[chunkOffset + j*chunkSize + i] ];
+            }
+        }
+        
+        // write back result of y = alpha Ax + beta y
+#pragma vector nontemporal
+        for (int i=0,           row=chunk*chunkSize;
+                 i<chunkSize;
+               ++i,           ++row
+            )
+        {
+            if (PLUSy)
+                y[row] = alpha * tmp[i] + beta * y[row];
+            else
+                y[row] = alpha * tmp[i];        //TODO nontemporal stores
+        }
     }
 
     // loop remainder   -> last (incompleat chunk)

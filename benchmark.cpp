@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
     MMreader mmMatrix (argv[1]);
 
 
-    int const revisions = 10000;
+    int const revisions = 100;
 
     /******CSR*******************************************************/
     {
@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
     /******SELL*******************************************************/
     {
 
-    SellCSigma_Matrix<4> sell_matrix(mmMatrix, 128);
+    SellCSigma_Matrix<4> sell_matrix(mmMatrix, 1024);
     int const length_sell = sell_matrix.getRows();
 
     double timeing_start, timeing_end, runtime, cpuTime;
