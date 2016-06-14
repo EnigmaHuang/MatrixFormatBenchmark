@@ -40,13 +40,14 @@ MMreader::MMreader(char const *fileName)
         printf("Market Market type: [%s]\n", mm_typecode_to_str(matcode));
         exit(1);
     }
-    if ( mm_is_complex(matcode) || mm_is_pattern(matcode) )
+    if ( mm_is_complex(matcode))
     {
-        printf("Complex and pattern matrices are not suported\n");
+        printf("Complex matrices are not suported\n");
         exit(1);
     }
 
     //TODO real und interger unterscheidung
+    //TODO use uint
 
     // get matrix size
     if ( 0 != mm_read_mtx_crd_size(f, &M_, &N_, &nz_) )
@@ -67,7 +68,7 @@ MMreader::MMreader(char const *fileName)
             )
     {
         isSymmetric_ = true;
-        // number of nonzeros <= nz_ * 2 (diagonale)
+        // note: number of nonzeros <= nz_ * 2 (diagonale)
         matrix_.reserve(nz_*2);
     }
     else
@@ -82,20 +83,23 @@ MMreader::MMreader(char const *fileName)
     double val;
     for (int i=0; i<nz_; ++i)
     {
-        fscanf(f, "%d %d %lg\n", &row, &col, &val);
-        //TODO use uint
+        if (mm_is_pattern(matcode))
+        {
+            fscanf(f, "%d %d\n", &row, &col);
+            val = 1.;
+        }
+        else
+            fscanf(f, "%d %d %lg\n", &row, &col, &val);
 
         // adjust from one-baed to zero-based indes
         --row;
         --col;
 
         matrix_.emplace_back( std::forward_as_tuple(row, col, val) );
-        //++entrys;
 
         if (isSymmetric_ && (row!=col))
         {
             matrix_.emplace_back( std::forward_as_tuple(col, row, val) );
-            //++entrys;
         }
     }
 
@@ -109,11 +113,9 @@ MMreader::MMreader(char const *fileName)
 }
 
 
-/*****Free Functions*MMreader*************************************************/
+/*****Free Functions MMreader*************************************************/
 void sortByRow(MMreader& mmMatrix)
 {
-/*  std::cout << "sort by row" << std::endl;*/
-
     std::vector< std::tuple<int,int,double> > & matrix = mmMatrix.getMatrx(); 
 
     // first sort by coll
@@ -130,8 +132,6 @@ void sortByRow(MMreader& mmMatrix)
                     );
 
     mmMatrix.isRowSorted(true);
-
-/*  std::cout << matrix;*/
 }
 
 std::vector<int> getValsPerRow(MMreader const & mmMatrix)
@@ -163,7 +163,6 @@ std::vector< std::tuple<int,int> > getRowLengths(MMreader const & mmMatrix)
     }
 
     return rowLengths;
-
 }
 
 std::vector<int> getOffsets(std::vector<int> const & valuesPerRow)
@@ -173,11 +172,8 @@ std::vector<int> getOffsets(std::vector<int> const & valuesPerRow)
 
     offsets.push_back(0);
 
-    //TODO parrallel (vor c++17(partition_scan) per hand)
-    //TODO [i]+= [i-1]??? (nicht parallel)
     std::partial_sum(valuesPerRow.begin(), valuesPerRow.end(),
                      std::back_inserter(offsets));
-
 
     return offsets;
 }
@@ -186,7 +182,7 @@ std::vector<int> getOffsets(std::vector<int> const & valuesPerRow)
 
 
 
-/*****Output and Comperison Helper Funktions**********************************/
+/*****Output Funktions**********************************/
 std::ostream& operator<<( std::ostream& os, std::tuple<int,int> data )
 {
     os << "(" << std::get<0>(data) << "," << std::get<1>(data) << ") ";

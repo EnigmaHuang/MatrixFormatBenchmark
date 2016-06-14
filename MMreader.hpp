@@ -7,12 +7,6 @@
 #include <iostream>
 
 
-
-template <typename T>
-std::ostream& operator<<( std::ostream& os, std::vector<T>& vec );
-
-
-
 /*****Class MMreader**********************************************************/
 class MMreader
 {
@@ -40,15 +34,16 @@ public:
 
 private:
     int M_, N_, nz_;    // number of rows, collumns and nonzeros in Matrix
-    //int entrys_;        // entrys in matrix (!= nz_ when symetric!)
     bool isSymmetric_;
     bool isRowSorted_, isColSorted_;
 
     // intermidiate (cordinate based) representation of sparse matrix
     // zero based (!)
-    std::vector< std::tuple<int,int,double> > matrix_;      //TODO use a set?
+    std::vector< std::tuple<int,int,double> > matrix_;
 
 };
+
+
 
 
 /*****Free Functions*MMreader*************************************************/
@@ -68,7 +63,6 @@ std::vector<int> getOffsets(std::vector<int> const & valuesPerLine);
 std::ostream& operator<<( std::ostream& os, std::tuple<int,int> data );
 std::ostream& operator<<( std::ostream& os, std::tuple<int,int,double> data );
 
-
 template <typename T>
 std::ostream& operator<<( std::ostream& os, std::vector<T>& vec )
 {
@@ -80,7 +74,6 @@ std::ostream& operator<<( std::ostream& os, std::vector<T>& vec )
     os.flush();
     return os;
 }
-
 
 template <typename T>
 bool operator ==(std::vector<T> const& a, T const& b)
