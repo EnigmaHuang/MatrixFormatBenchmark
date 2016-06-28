@@ -5,10 +5,12 @@
 
 #include "MMreader.hpp"
 
+#ifdef USE_LIKWID
 extern "C"
 {
-//#include <likwid.h>
+#include <likwid.h>
 }
+#endif
 
 
 /*****Class CSR_MATRIX********************************************************/
@@ -61,8 +63,10 @@ void spMV( CSR_Matrix const & A,
     int const numRows  = A.getRows();
     int const nonZeros = A.getNonZeros();
 
-    //LIKWID_MARKER_THREADINIT;
-    //LIKWID_MARKER_START("SpMV_CSR");
+#ifdef USE_LIKWID
+    LIKWID_MARKER_THREADINIT;
+    LIKWID_MARKER_START("SpMV_CSR");
+#endif
 
     // loop over all rows
 #ifdef _OPENMP
@@ -86,7 +90,9 @@ void spMV( CSR_Matrix const & A,
         }
     }
 
-    //LIKWID_MARKER_STOP("SpMV_CSR");
+#ifdef USE_LIKWID
+    LIKWID_MARKER_STOP("SpMV_CSR");
+#endif
 }
 
 

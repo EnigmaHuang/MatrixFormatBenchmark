@@ -11,10 +11,12 @@
 
 #include "MMreader.hpp"
 
+#ifdef USE_LIKWID
 extern "C"
 {
-//#include <likwid.h>
+#include <likwid.h>
 }
+#endif
 
 
 /*****Class SELL-C-Sigam******************************************************/
@@ -269,8 +271,10 @@ void spMV( SellCSigma_Matrix<C> const & A,
     int const numberOfChunks = A.getNumberOfChunks();
     int const chunkSize      = C;
 
-    //LIKWID_MARKER_THREADINIT;
-    //LIKWID_MARKER_START("SpMV_Sell-C-sigma");
+#ifdef USE_LIKWID
+    LIKWID_MARKER_THREADINIT;
+    LIKWID_MARKER_START("SpMV_Sell-C-sigma");
+#endif
 
 #ifdef _OPENMP
     #pragma omp for schedule(runtime)
@@ -348,7 +352,9 @@ void spMV( SellCSigma_Matrix<C> const & A,
         }
     }
 
-        //LIKWID_MARKER_STOP("SpMV_Sell-C-sigma");
+#ifdef USE_LIKWID
+        LIKWID_MARKER_STOP("SpMV_Sell-C-sigma");
+#endif
 }
 
 #endif
