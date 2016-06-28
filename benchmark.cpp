@@ -1,6 +1,7 @@
 #include "MMreader.hpp"
-#include "CSRMatrix.hpp"
+//#include "CSRMatrix.hpp"
 #include "SellCSigma.hpp"
+#include "spMV.hpp"
 
 #include <iostream>
 #include <cassert>

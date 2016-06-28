@@ -1,16 +1,9 @@
-#ifndef CRSMATRIX_HPP
+#ifndef CSRMATRIX_HPP
 #define CSRMATRIX_HPP
 
 #include <vector>
 
 #include "MMreader.hpp"
-
-#ifdef USE_LIKWID
-extern "C"
-{
-#include <likwid.h>
-}
-#endif
 
 
 /*****Class CSR_MATRIX********************************************************/
@@ -42,60 +35,6 @@ private:
 
 
 /*****Free Functions*CSR_MATRIX***********************************************/
-
-/**
- * sparse Matrix-Vector multiplication
- * y=A*x + beta*y
- * using the CSR Format
- * y and x musst be allocated and valid
- * if _OPEMP is set you have to call it inside a OMP parallel region!
- */
-template<bool PLUSy=false>
-void spMV( CSR_Matrix const & A,
-           double const *x,
-           double *y,
-           double alpha=1.,
-           double beta=0.)
-{
-    double const *val  = A.getValues();
-    int const *colInd  = A.getColInd();
-    int const *rowPtr  = A.getRowPtr();
-    int const numRows  = A.getRows();
-    int const nonZeros = A.getNonZeros();
-
-#ifdef USE_LIKWID
-    LIKWID_MARKER_THREADINIT;
-    LIKWID_MARKER_START("SpMV_CSR");
-#endif
-
-    // loop over all rows
-#ifdef _OPENMP
-    #pragma omp for schedule(runtime)
-#endif
-    for (int rowID=0; rowID<NumRows; ++rowID)
-    {
-        double tmp = 0.;
-
-        // loop over all elements in row
-        for (int rowEntry=rowPtr[rowID]; rowEntry<rowPtr[rowID+1]; ++rowEntry)
-        {
-            tmp += val[rowEntry] * x[ colInd[rowEntry] ];
-        }
-
-        if(PLUSy)
-            y[rowID] = alpha * tmp + beta * y[rowID];
-        else
-        {
-            y[rowID] = alpha * tmp;
-        }
-    }
-
-#ifdef USE_LIKWID
-    LIKWID_MARKER_STOP("SpMV_CSR");
-#endif
-}
-
-
 /**
  * output operator
  * prints the CSR matrix to os

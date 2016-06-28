@@ -59,6 +59,6 @@ benchmark_omp.o: benchmark.cpp CSRMatrix.hpp SellCSigma.hpp MMreader.hpp
 
 
 ##########DEPENDENCIES#######################################################
-test.o: test.cpp CSRMatrix.hpp SellCSigma.hpp MMreader.hpp
-benchmark.o: benchmark.cpp MMreader.hpp CSRMatrix.hpp SellCSigma.hpp
+test.o: test.cpp CSRMatrix.hpp SellCSigma.hpp MMreader.hpp spMV.hpp
+benchmark.o: benchmark.cpp MMreader.hpp CSRMatrix.hpp SellCSigma.hpp spMV.hpp
 MMreader.o: MMreader.cpp MMreader.hpp mmio/mmio.h
