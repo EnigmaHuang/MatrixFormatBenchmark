@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <numeric>
+#include <algorithm>
 
 extern "C"
 {

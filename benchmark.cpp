@@ -3,9 +3,12 @@
 #include "SellCSigma.hpp"
 
 #include <iostream>
-#include <vector>
 #include <cassert>
 
+extern "C"
+{
+#include "timing/timing.h"
+}
 
 
 int main(int argc, char *argv[])
@@ -20,7 +23,7 @@ int main(int argc, char *argv[])
     MMreader mmMatrix (argv[1]);
 
 
-    int const revisions = 100;
+    int const revisions = 100;  //TODO comandline parameter
 
     /******CSR*******************************************************/
     {
@@ -30,16 +33,15 @@ int main(int argc, char *argv[])
     double timeing_start, timeing_end, runtime, cpuTime;
 
     // create vectors (NUMA awareness!)
-    std::vector<double> x,y;
-    x.reserve(length);
-    y.reserve(length);
+    double *x = new double[length];
+    double *y = new double[length];
 #ifdef _OPENMP
-    #pragma omp parallel for schedule(static)
+    #pragma omp parallel for schedule(runtime)
 #endif
     for (int i=0; i<length; ++i)
     {
-        x.push_back(42.);
-        y.push_back(0.);
+        x[i] = 0.;
+        y[i] = 0.;
     }
 
 #ifdef _OPENMP
@@ -49,47 +51,45 @@ int main(int argc, char *argv[])
     timing(&timeing_start, &cpuTime);
 
     for (int i=0; i<revisions; ++i)
-        spMV( csr_matrix, x.data(), y.data() );
+        spMV( csr_matrix, x, y );
 
     timing(&timeing_end, &cpuTime);
     runtime = timeing_end - timeing_start;
     }
 
-    long flops = csr_matrix.getNonZeros()*2;
+    int flops = csr_matrix.getNonZeros()*2;
     std::cout << "runtime CSR: " << runtime << " sec."
-              << " performance: " << flops*revisions / runtime
+              << " performance: " << static_cast<double>(flops)*revisions / runtime
               << std::endl;
 
-    //auto messerment = spMV( csr_matrix, x.data(), y.data() );
+    delete[] x;
+    delete[] y;
 
-    //std::cout << "Runtime CSR: " << std::get<0>(messerment) << "sec "
-              //<< "Performance: " << std::get<1>(messerment) << "Flops/sec"
-              //<< std::endl;
     }
 
     /******SELL*******************************************************/
     {
 
-    SellCSigma_Matrix<4> sell_matrix(mmMatrix, 1024);
-    int const length_sell = sell_matrix.getRows();
+    //TODO compile for different Cs
+    //TODO sigma als comand line parameter
+    int C = 4;
+    int sigma = 1;
+
+    SellCSigma_Matrix<4> sell_matrix(mmMatrix, sigma);
+    int const length = sell_matrix.getRows();
 
     double timeing_start, timeing_end, runtime, cpuTime;
 
     // create vectors (NUMA awareness!)
-    //std::vector<double> m,n;
-    //m.reserve(length_sell);
-    //n.reserve(length_sell);
-    double *m = (double*) _mm_malloc(sizeof(double)*length_sell,64);
-    double *n = (double*) _mm_malloc(sizeof(double)*length_sell,64);
+    double *x = new double[length];
+    double *y = new double[length];
 #ifdef _OPENMP
-    #pragma omp parallel for schedule(static)
+    #pragma omp parallel for schedule(runtime)
 #endif
-    for (int i=0; i<length_sell; ++i)
+    for (int i=0; i<length; ++i)
     {
-        //m.push_back(42.);
-        //n.push_back(0.);
-        m[i] = 42.;
-        n[i] = 0.;
+        x[i] = 0.;
+        y[i] = 0.;
     }
 
 #ifdef _OPENMP
@@ -99,31 +99,25 @@ int main(int argc, char *argv[])
     timing(&timeing_start, &cpuTime);
 
     for (int i=0; i<revisions; ++i)
-        //spMV( sell_matrix, m.data(), n.data() );
-        spMV( sell_matrix, m, n );
+        spMV( sell_matrix, x, y );
 
     timing(&timeing_end, &cpuTime);
     runtime = timeing_end - timeing_start;
     }
 
-    long long flops    = sell_matrix.getNonZeros()*2 ;
-    double overhead    = static_cast<double>(sell_matrix.getOverhead()) /
+    int flops       = sell_matrix.getNonZeros()*2 ;
+    double overhead = static_cast<double>(sell_matrix.getOverhead()) /
                          (sell_matrix.getNonZeros()+sell_matrix.getOverhead());
 
 
-    std::cout << "runtime Sell-4-16: " << runtime << " sec.:"
-              << " performance: " << flops*revisions / runtime
+    std::cout << "runtime Sell-" << C << "-" << sigma << ": " << runtime << " sec."
+              << " performance: " << static_cast<double>(flops)*revisions / runtime
               << " overhead: " << overhead*100 << "%"
               << std::endl;
 
-    //auto messerment_sell = spMV( sell_matrix, m.data(), n.data() );
-
-    //std::cout << "Runtime SEll: " << std::get<0>(messerment) << "sec "
-              //<< "Performance: " << std::get<1>(messerment) << "Flops/sec"
-              //<< std::endl;
-    
-    _mm_free(m);
-    _mm_free(n);
+    delete[] x;
+    delete[] y;
     }
+
     return 0;
 }

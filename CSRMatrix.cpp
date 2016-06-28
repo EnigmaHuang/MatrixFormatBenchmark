@@ -5,13 +5,11 @@
 #include <iterator>
 #include <algorithm>
 
-extern "C"
-{
-//#include <likwid.h>
-#include "timing/timing.h"
-}
 
 /*****Implementation*CSR_MATRIX***********************************************/
+/**
+ * constructor
+ */
 CSR_Matrix::CSR_Matrix( MMreader mmMatrix )
 :M_(mmMatrix.getRows()), N_(mmMatrix.getCols()), nz_(mmMatrix.getNonZeros())
 ,colInd_(new int[nz_]), rowPtr_(new int[M_+1]), val_(new double[nz_])
@@ -33,13 +31,13 @@ CSR_Matrix::CSR_Matrix( MMreader mmMatrix )
         rowPtr_[rowID] = offsets[rowID];
 
         //loop over all elements in Row
-        for (int i=offsets[rowID]; i<offsets[rowID+1]; ++i)
+        for (int id=offsets[rowID]; id<offsets[rowID+1]; ++id)
         {
-            int    col = std::get<1>(mmData[i]);
-            double val = std::get<2>(mmData[i]);
+            int    col = std::get<1>(mmData[id]);
+            double val = std::get<2>(mmData[id]);
         
-            val_[i]    = val;
-            colInd_[i] = col;
+            val_[id]    = val;
+            colInd_[id] = col;
         }
     }
 
@@ -54,68 +52,16 @@ CSR_Matrix::CSR_Matrix( MMreader mmMatrix )
 }
 
 
+/**
+ * destructor
+ */
 CSR_Matrix::~CSR_Matrix()
 {
-    delete[] colInd_;
     delete[] val_;
     delete[] rowPtr_;
+    delete[] colInd_;
 }
 
-/*
-CSR_Matrix::CSR_Matrix(CSR_Matrix const & other)
-:M_(other.M_), N_(other.N_), nz_(other.nz_),
- colInd_(new int[nz_]), rowPtr_(new int[M_+1]), val_(new double[nz_])
-{
-
-    std::copy(other.colInd_, other.colInd_+nz_, colInd_);
-    std::copy(other.rowPtr_, other.rowPtr_+M_+1, rowPtr_);
-    std::copy(other.val_, other.val_+nz_, val_);
-}
-*/
-
-/*
-CSR_Matrix & CSR_Matrix::operator= (CSR_Matrix const & other)
-{
-    CSR_Matrix tmp (other);
-    std::swap ( M_, tmp.M_ );
-    std::swap ( N_, tmp.N_ );
-    std::swap ( nz_, tmp.nz_ );
-    std::swap ( colInd_, tmp.colInd_ );
-    std::swap ( rowPtr_, tmp.rowPtr_ );
-    std::swap ( val_, tmp.val_ );
-
-    return *this;
-}
-*/
-
-/*
-CSR_Matrix::CSR_Matrix( CSR_Matrix &&other )
-:M_(other.M_), N_(other.N_), nz_(other.nz_),
- colInd_(new int[nz_]), rowPtr_(new int[M_+1]), val_(new double[nz_])
-{
-    other.M_ = 0;
-    other.N_ = 0;
-    other.nz_ = 0;
-    other.colInd_ = nullptr;
-    other.rowPtr_ = nullptr;
-    other.val_ = nullptr;
-}
-*/
-
-/*
-CSR_Matrix & CSR_Matrix::operator= (CSR_Matrix && other)
-{
-    CSR_Matrix tmp (other);
-    std::swap ( M_, other.M_ );
-    std::swap ( N_, other.N_ );
-    std::swap ( nz_, other.nz_ );
-    std::swap ( colInd_, other.colInd_ );
-    std::swap ( rowPtr_, other.rowPtr_ );
-    std::swap ( val_, other.val_ );
-
-    return *this;
-}
-*/
 
 /*****Free Functions*CSR_MATRIX***********************************************/
 std::ostream& operator<<( std::ostream& os, CSR_Matrix const & matrix )

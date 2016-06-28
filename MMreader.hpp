@@ -1,7 +1,6 @@
 #ifndef MMREADER_HPP
 #define MMREADER_HPP
 
-#include <algorithm>
 #include <tuple>
 #include <vector>
 #include <iostream>
@@ -15,14 +14,14 @@ public:
     MMreader(char const *fileName);
 
     // Geter
-    bool isRowSorted() const { return isRowSorted_; }
-    bool isColSorted() const { return isColSorted_; }
-    void isRowSorted(bool status) { isRowSorted_ = status; }
-    void isColSorted(bool status) { isColSorted_ = status; }
-    int getRows() const { return M_; }
-    int getCols() const { return N_; }
-    int getNonZeros() const { return matrix_.size(); }
-    bool getSymmetry() const { return isSymmetric_; }
+    bool isRowSorted()            const { return isRowSorted_; }
+    bool isColSorted()            const { return isColSorted_; }
+    void isRowSorted(bool status)       { isRowSorted_ = status; }
+    void isColSorted(bool status)       { isColSorted_ = status; }
+    int getRows()                 const { return M_; }
+    int getCols()                 const { return N_; }
+    int getNonZeros()             const { return matrix_.size(); }
+    bool getSymmetry()            const { return isSymmetric_; }
     std::vector< std::tuple<int,int,double> > const & getMatrx() const
     {
         return matrix_;

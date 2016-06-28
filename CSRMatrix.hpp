@@ -2,14 +2,12 @@
 #define CSRMATRIX_HPP
 
 #include <vector>
-#include <tuple>
 
 #include "MMreader.hpp"
 
 extern "C"
 {
 //#include <likwid.h>
-#include "timing/timing.h"
 }
 
 
@@ -20,39 +18,35 @@ public:
     CSR_Matrix( MMreader mmMatrix );        // constructor
     ~CSR_Matrix();                          // destructor
 
-    int getRows() const { return M_; }
-    int getCols() const { return N_; }
-    int getNonZeros() const { return nz_; }
-    int const * getColInd() const  { return colInd_; }
-    int const * getRowPtr() const  { return rowPtr_; }
-    double const * getValues() const  { return val_; }
+    int            getRows() const     { return M_; }
+    int            getCols() const     { return N_; }
+    int            getNonZeros() const { return nz_; }
+    int const *    getColInd() const   { return colInd_; }
+    int const *    getRowPtr() const   { return rowPtr_; }
+    double const * getValues() const   { return val_; }
 
     // We do not need copy and move symantic for this benchmark
     CSR_Matrix(CSR_Matrix const & other) = delete;   // copy constructor
     CSR_Matrix(CSR_Matrix && other) = delete;        // move constructor
-
     CSR_Matrix & operator= (CSR_Matrix const & other) = delete;  // copy assignment
     CSR_Matrix & operator= (CSR_Matrix && other) = delete;       // move assignment
 
 private:
-    int M_, N_, nz_;
-    int *colInd_, *rowPtr_;
-    double* val_;
+    int M_, N_, nz_;        // numer of rows, columns and non zeros
+    int *colInd_, *rowPtr_; // colum Indices of matrix elements, row Pointer
+    double *val_;           // values of matrix elements
+    // NOTE: We use row pointer here to ensure NUMA awareness.
 };
 
 
 /*****Free Functions*CSR_MATRIX***********************************************/
-std::ostream& operator<<(std::ostream& os, CSR_Matrix const & matrix);
 
 /**
  * sparse Matrix-Vector multiplication
- * y=Ax
+ * y=A*x + beta*y
  * using the CSR Format
  * y and x musst be allocated and valid
- * OMP parallel
- *
- * returns a tuple containg the  runtime and the performance (flops/time)
- * of the kernel
+ * if _OPEMP is set you have to call it inside a OMP parallel region!
  */
 template<bool PLUSy=false>
 void spMV( CSR_Matrix const & A,
@@ -67,40 +61,40 @@ void spMV( CSR_Matrix const & A,
     int const rows     = A.getRows();
     int const nonZeros = A.getNonZeros();
 
-//#pragma omp parallel
-    //{ // open paralel region
-        //LIKWID_MARKER_THREADINIT;
-        //LIKWID_MARKER_START("SpMV_CSR");
+    //LIKWID_MARKER_THREADINIT;
+    //LIKWID_MARKER_START("SpMV_CSR");
 
-        // loop over all rows
+    // loop over all rows
 #ifdef _OPENMP
-        #pragma omp for schedule(runtime)
+    #pragma omp for schedule(runtime)
 #endif
-        for (int rowID=0; rowID<rows; ++rowID)
+    for (int rowID=0; rowID<rows; ++rowID)
+    {
+        double tmp = 0.;
+
+        // loop over all elements in row
+        for (int id=rowPtr[rowID]; id<rowPtr[rowID+1]; ++id)
         {
-            int id = rowPtr[rowID];
-
-            // set y vec to 0
-            //y[rowID] = 0;
-            double tmp = 0.;
-
-            // loop over all elements in row
-            for (; id<rowPtr[rowID+1]; ++id)
-            {
-                //y[rowID] += val[id] * x[ colInd[id] ];
-                tmp += val[id] * x[ colInd[id] ];
-            }
-
-            if(PLUSy)
-                y[rowID] = alpha * tmp + beta * y[rowID];
-            else
-                y[rowID] = alpha * tmp;
+            tmp += val[id] * x[ colInd[id] ];
         }
 
-        //LIKWID_MARKER_STOP("SpMV_CSR");
+        if(PLUSy)
+            y[rowID] = alpha * tmp + beta * y[rowID];
+        else
+        {
+#pragma vector nontemporal
+            y[rowID] = alpha * tmp;
+        }
+    }
 
-    //} // close paralel region
-
+    //LIKWID_MARKER_STOP("SpMV_CSR");
 }
+
+
+/**
+ * output operator
+ * prints the CSR matrix to os
+ */
+std::ostream& operator<<(std::ostream& os, CSR_Matrix const & matrix);
 
 #endif
