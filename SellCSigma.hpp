@@ -264,7 +264,7 @@ void spMV( SellCSigma_Matrix<C> const & A,
     int const * chunkPtr     = A.getChankPtr();
     int const * chunkLength  = A.getChankLength();
     int const * colInd       = A.getColInd();
-    int const rows           = A.getRows();
+    int const NumRows           = A.getRows();
     int const nonZeros       = A.getNonZeros();
     int const numberOfChunks = A.getNumberOfChunks();
     int const chunkSize      = C;
@@ -275,33 +275,35 @@ void spMV( SellCSigma_Matrix<C> const & A,
 #ifdef _OPENMP
     #pragma omp for schedule(runtime)
 #endif
-    for (int chunk=0; chunk < rows/chunkSize; ++chunk)
+    // loop over all chunks
+    for (int chunk=0; chunk < NumRows/chunkSize; ++chunk)
     {
         int chunkOffset = chunkPtr[chunk];
         double tmp[chunkSize] {};
 
-        // do MatVecMul
-        for (int j=0; j<chunkLength[chunk]; ++j)
+        // loop over all row elements in chunk
+        for (int rowEntry=0; rowEntry<chunkLength[chunk]; ++rowEntry)
         {
+            // (auto) vectorised loop over all rows in chunk
             #pragma simd
-            for (int i=0; i<chunkSize; ++i)
+            for (int cRow=0; cRow<chunkSize; ++cRow)
             {
-                tmp[i] += val      [chunkOffset + j*chunkSize + i]
-                        * x[ colInd[chunkOffset + j*chunkSize + i] ];
+                tmp[cRow] += val      [chunkOffset + rowEntry*chunkSize + cRow]
+                           * x[ colInd[chunkOffset + rowEntry*chunkSize + cRow] ];
             }
         }
         
         // write back result of y = alpha Ax + beta y
-        for (int i=0,           row=chunk*chunkSize;
-                 i<chunkSize;
-               ++i,           ++row
+        for (int cRow=0,           rowID=chunk*chunkSize;
+                 cRow<chunkSize;
+               ++cRow,           ++rowID
             )
         {
             if (PLUSy)
-                y[row] = alpha * tmp[i] + beta * y[row];
+                y[rowID] = alpha * tmp[cRow] + beta * y[rowID];
             else
             {
-                y[row] = alpha * tmp[i];
+                y[rowID] = alpha * tmp[cRow];
             }
         }
     }
@@ -310,9 +312,9 @@ void spMV( SellCSigma_Matrix<C> const & A,
 #ifdef _OPENMP
     #pragma omp single
 #endif
-    if (rows/chunkSize != numberOfChunks)
+    if (NumRows/chunkSize != numberOfChunks)
     {
-        assert (rows/chunkSize == numberOfChunks-1);
+        assert (NumRows/chunkSize == numberOfChunks-1);
 
         int chunkOffset = chunkPtr[numberOfChunks-1];
         double tmp[chunkSize] {};
@@ -321,7 +323,7 @@ void spMV( SellCSigma_Matrix<C> const & A,
         for (int j=0; j<chunkLength[numberOfChunks-1]; ++j)
         {
             for (int i=0,           row=(numberOfChunks-1)*chunkSize;
-                     i<chunkSize && row<rows;
+                     i<chunkSize && row<NumRows;
                    ++i,           ++row
                 )
             {
@@ -332,7 +334,7 @@ void spMV( SellCSigma_Matrix<C> const & A,
         
         // write back result of y = alpha Ax + beta y
         for (int i=0,           row=(numberOfChunks-1)*chunkSize;
-                 i<chunkSize && row<rows;
+                 i<chunkSize && row<NumRows;
                 ++i,          ++row
             )
         {

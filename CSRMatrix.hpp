@@ -58,7 +58,7 @@ void spMV( CSR_Matrix const & A,
     double const *val  = A.getValues();
     int const *colInd  = A.getColInd();
     int const *rowPtr  = A.getRowPtr();
-    int const rows     = A.getRows();
+    int const numRows  = A.getRows();
     int const nonZeros = A.getNonZeros();
 
     //LIKWID_MARKER_THREADINIT;
@@ -68,14 +68,14 @@ void spMV( CSR_Matrix const & A,
 #ifdef _OPENMP
     #pragma omp for schedule(runtime)
 #endif
-    for (int rowID=0; rowID<rows; ++rowID)
+    for (int rowID=0; rowID<NumRows; ++rowID)
     {
         double tmp = 0.;
 
         // loop over all elements in row
-        for (int id=rowPtr[rowID]; id<rowPtr[rowID+1]; ++id)
+        for (int rowEntry=rowPtr[rowID]; rowEntry<rowPtr[rowID+1]; ++rowEntry)
         {
-            tmp += val[id] * x[ colInd[id] ];
+            tmp += val[rowEntry] * x[ colInd[rowEntry] ];
         }
 
         if(PLUSy)
