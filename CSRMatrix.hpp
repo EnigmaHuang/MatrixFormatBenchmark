@@ -82,7 +82,6 @@ void spMV( CSR_Matrix const & A,
             y[rowID] = alpha * tmp + beta * y[rowID];
         else
         {
-#pragma vector nontemporal
             y[rowID] = alpha * tmp;
         }
     }

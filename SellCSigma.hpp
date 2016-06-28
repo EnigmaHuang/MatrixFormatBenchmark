@@ -301,7 +301,6 @@ void spMV( SellCSigma_Matrix<C> const & A,
                 y[row] = alpha * tmp[i] + beta * y[row];
             else
             {
-#pragma vector nontemporal
                 y[row] = alpha * tmp[i];
             }
         }
