@@ -43,11 +43,10 @@ MMreader::MMreader(char const *fileName)
     }
     if ( mm_is_complex(matcode))
     {
-        printf("Complex matrices are not suported\n");
-        exit(1);
+        printf("Complex matrices are not fully suported.");
+        printf("The imaginary part is ignored!");
     }
 
-    //TODO real und interger unterscheidung
     //TODO use uint
 
     // get matrix size
@@ -88,6 +87,11 @@ MMreader::MMreader(char const *fileName)
         {
             fscanf(f, "%d %d\n", &row, &col);
             val = 1.;
+        }
+        else if ( mm_is_complex(matcode))
+        {
+            fscanf(f, "%d %d %lg %*lg\n", &row, &col, &val);
+            //TODO fully suport
         }
         else
             fscanf(f, "%d %d %lg\n", &row, &col, &val);
