@@ -1,14 +1,12 @@
 CC       = icc
 CPP      = icpc
-#CFLAGS   = -O3 -march=native -Wall -Wshadow -ansi -g -qopt-report=5
-CFLAGS   = -O3 -xhost -Wall -Wshadow -ansi -g -qopt-report=5
+CFLAGS   = -O3 -xhost -march=native -Wall -Wshadow -ansi -g
 CPPFLAGS = $(CFLAGS) -std=c++11
 LDFLAGS  = 
 OMPFLAG  = -fopenmp
 RM       = rm -f
 
 BIN                 = test_seriell test_omp benchmark_seriell benchmark_omp
-OFILES_example      = mmio/mmio.o example_read.o
 OFILES_testSer      = mmio/mmio.o MMreader.o CSRMatrix_ser.o timing/timing.o test.o
 OFILES_testOMP      = mmio/mmio.o MMreader.o CSRMatrix_omp.o timing/timing.o test.o
 OFILES_benchmarkSer = mmio/mmio.o MMreader.o CSRMatrix_ser.o timing/timing.o benchmark.o
@@ -20,7 +18,7 @@ OFILES_benchmarkOMP = mmio/mmio.o MMreader.o CSRMatrix_omp.o timing/timing.o ben
 all: $(BIN)
 
 clean:
-	$(RM) $(BIN) $(OFILES_example) $(OFILES_testSer) $(OFILES_testOMP) $(OFILES_benchmarkSer) $(OFILES_benchmarkOMP) *.optrpt
+	$(RM) $(BIN) $(OFILES_example) $(OFILES_testSer) $(OFILES_testOMP) $(OFILES_benchmarkSer) $(OFILES_benchmarkOMP)
 
 
 ##########BIN#################################################################
