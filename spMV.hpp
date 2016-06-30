@@ -80,7 +80,7 @@ void spMV( SellCSigma_Matrix<C> const & A,
     int const * chunkPtr     = A.getChankPtr();
     int const * chunkLength  = A.getChankLength();
     int const * colInd       = A.getColInd();
-    int const NumRows        = A.getRows();
+    int const numRows        = A.getRows();
     int const nonZeros       = A.getNonZeros();
     int const numberOfChunks = A.getNumberOfChunks();
     int const chunkSize      = C;
@@ -94,7 +94,7 @@ void spMV( SellCSigma_Matrix<C> const & A,
     #pragma omp parallel for schedule(runtime)
 #endif
     // loop over all chunks
-    for (int chunk=0; chunk < NumRows/chunkSize; ++chunk)
+    for (int chunk=0; chunk < numberOfChunks; ++chunk)
     {
         int chunkOffset = chunkPtr[chunk];
         double tmp[chunkSize] {};
@@ -112,46 +112,14 @@ void spMV( SellCSigma_Matrix<C> const & A,
         }
         
         // write back result of y = alpha Ax + beta y
+        // TODO zweite abbruch bedingung verhindert vectoresierung
+        //      entwerder muss y groß genug sein ode rirgend eine coole andere idee
         for (int cRow=0,           rowID=chunk*chunkSize;
-                 cRow<chunkSize;
+                 cRow<chunkSize && rowID<numRows;
                ++cRow,           ++rowID
             )
         {
             y[rowID] = tmp[cRow];
-        }
-    }
-
-    // loop remainder   -> last (incompleat chunk)
-#ifdef _OPENMP
-    #pragma omp single
-#endif
-    if (NumRows/chunkSize != numberOfChunks)
-    {
-        assert (NumRows/chunkSize == numberOfChunks-1);
-
-        int chunkOffset = chunkPtr[numberOfChunks-1];
-        double tmp[chunkSize] {};
-
-        // do MatVecMul
-        for (int j=0; j<chunkLength[numberOfChunks-1]; ++j)
-        {
-            for (int i=0,           row=(numberOfChunks-1)*chunkSize;
-                     i<chunkSize && row<NumRows;
-                   ++i,           ++row
-                )
-            {
-                tmp[i] += val      [chunkOffset + j*chunkSize + i]
-                        * x[ colInd[chunkOffset + j*chunkSize + i] ];
-            }
-        }
-        
-        // write back result of y = alpha Ax + beta y
-        for (int i=0,           row=(numberOfChunks-1)*chunkSize;
-                 i<chunkSize && row<NumRows;
-                ++i,          ++row
-            )
-        {
-            y[row] = tmp[i];
         }
     }
 

@@ -136,7 +136,7 @@ SellCSigma_Matrix<C>::SellCSigma_Matrix( MMreader mmMatrix, int const sigma )
 #ifdef _OPENMP
     #pragma omp parallel for schedule(runtime)
 #endif
-    for (int chunk=0; chunk < getRows()/getChunkSize(); ++chunk)
+    for (int chunk=0; chunk < getNumberOfChunks(); ++chunk)
     {
         chunkPtr_[chunk] = chunkOffset[chunk];
 
@@ -147,21 +147,30 @@ SellCSigma_Matrix<C>::SellCSigma_Matrix( MMreader mmMatrix, int const sigma )
                  ++i,                ++row
                 )
             {
-                // set permutation
-                permute_[row] = std::get<0>(rowLengths[row]);
-
                 int    col;
                 double val;
 
-                if ( j < std::get<1>(rowLengths[row]) )
-                {   // fill with matrix values
-                    int id = rowOffset[ permute_[row] ] + j;
+                if (row<getRows())
+                {
+                    // set permutation
+                    permute_[row] = std::get<0>(rowLengths[row]);
 
-                    val = std::get<2>( mmData[id] );
-                    col = std::get<1>( mmData[id] );
+                    // finde values and collumn index
+                    if ( j < std::get<1>(rowLengths[row]) )
+                    {   // fill with matrix values
+                        int id = rowOffset[ permute_[row] ] + j;
+
+                        val = std::get<2>( mmData[id] );
+                        col = std::get<1>( mmData[id] );
+                    }
+                    else
+                    {   // fill chunk with 0
+                        val = 0.;
+                        col = 0;
+                    }
                 }
                 else
-                {   // fill chunk with 0
+                { // add zero rows to end of matrix fill up last chunk
                     val = 0.;
                     col = 0;
                 }
@@ -171,45 +180,6 @@ SellCSigma_Matrix<C>::SellCSigma_Matrix( MMreader mmMatrix, int const sigma )
             }
         }
     }
-
-    // loop remainder -> last (incompleat chunk)
-    if (getRows()/getChunkSize() != getNumberOfChunks())
-    {
-        int chunk = getRows() /getChunkSize();
-        chunkPtr_[chunk] = chunkOffset[chunk];
-
-        for (int j=0; j<chunkLength_[chunk]; ++j)
-        {
-            for (int i=0,            row=chunk*getChunkSize();
-                 i<getChunkSize() && row<getRows();
-                 ++i,                ++row
-                )
-            {
-                // set permutation
-                permute_[row] = std::get<0>(rowLengths[row]);
-
-                int    col;
-                double val;
-
-                if ( j < std::get<1>(rowLengths[row]) )
-                {   // fill with matrix values
-                    int id = rowOffset[ permute_[row] ] + j;
-
-                    val = std::get<2>( mmData[id] );
-                    col = std::get<1>( mmData[id] );
-                }
-                else
-                {   // fill chunk with 0
-                    val = 0.;
-                    col = 0;
-                }
-
-                val_   [chunkPtr_[chunk] + i + j*getChunkSize()] = val;
-                colInd_[chunkPtr_[chunk] + i + j*getChunkSize()] = antiPermute_[col];
-            }
-        }
-    }
-
 
     /*
     std::cout << "Sell-C-sigma constructed:"
