@@ -18,7 +18,6 @@ extern "C"
  * y=A*x + beta*y
  * using the CSR Format
  * y and x musst be allocated and valid
- * if _OPEMP is set you have to call it inside a OMP parallel region!
  */
 template<bool PLUSy=false>
 void spMV( CSR_Matrix const & A,
@@ -40,7 +39,7 @@ void spMV( CSR_Matrix const & A,
 
     // loop over all rows
 #ifdef _OPENMP
-    #pragma omp for schedule(runtime)
+    #pragma omp parallel for schedule(runtime)
 #endif
     for (int rowID=0; rowID<numRows; ++rowID)
     {
@@ -101,7 +100,7 @@ void spMV( SellCSigma_Matrix<C> const & A,
 #endif
 
 #ifdef _OPENMP
-    #pragma omp for schedule(runtime)
+    #pragma omp parallel for schedule(runtime)
 #endif
     // loop over all chunks
     for (int chunk=0; chunk < NumRows/chunkSize; ++chunk)

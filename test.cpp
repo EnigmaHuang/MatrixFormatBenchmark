@@ -27,9 +27,6 @@ int main(int argc, char *argv[])
         y.push_back(42);
     }
 
-#ifdef _OPENMP
-    #pragma omp parallel
-#endif
      spMV( identity_csr, x.data(), y.data() );
 
     assert (x == y);
@@ -50,9 +47,6 @@ int main(int argc, char *argv[])
         n.push_back(42);
     }
 
-#ifdef _OPENMP
-    #pragma omp parallel
-#endif
     spMV( identity_sell_1_1, m.data(), n.data() );
 
     //std::cout << m;
@@ -76,9 +70,6 @@ int main(int argc, char *argv[])
         y.push_back(42);
     }
 
-#ifdef _OPENMP
-    #pragma omp parallel
-#endif
     spMV( band_csr, x.data(), y.data() );
 
     //assert (y == x);
@@ -100,9 +91,6 @@ int main(int argc, char *argv[])
         n.push_back(42);
     }
 
-#ifdef _OPENMP
-    #pragma omp parallel
-#endif
     spMV( band_sell, m.data(), n.data() );
 
     assert (m == n);
@@ -127,9 +115,6 @@ int main(int argc, char *argv[])
         y.push_back(42);
     }
 
-#ifdef _OPENMP
-    #pragma omp parallel
-#endif
     spMV( band_sym_csr, x.data(), y.data() );
 
     assert (y == x);
@@ -154,9 +139,6 @@ int main(int argc, char *argv[])
         y.push_back(42);
     }
 
-#ifdef _OPENMP
-    #pragma omp parallel
-#endif
     spMV( brockenBand_csr, x.data(), y.data() );
 
     if ( !(y==x) && !(y==1.) )
@@ -177,9 +159,6 @@ int main(int argc, char *argv[])
         n.push_back(42);
     }
 
-#ifdef _OPENMP
-    #pragma omp parallel
-#endif
     spMV( brockenBand_sell, m.data(), n.data() );
 
     if ( !(m==n) && !(n==1.) )

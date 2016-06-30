@@ -45,10 +45,6 @@ int main(int argc, char *argv[])
         y[i] = 0.;
     }
 
-#ifdef _OPENMP
-    #pragma omp parallel
-#endif
-    {
     timing(&timeing_start, &cpuTime);
 
     for (int i=0; i<revisions; ++i)
@@ -56,7 +52,6 @@ int main(int argc, char *argv[])
 
     timing(&timeing_end, &cpuTime);
     runtime = timeing_end - timeing_start;
-    }
 
     int flops = csr_matrix.getNonZeros()*2;
     std::cout << "runtime CSR: " << runtime << " sec."
@@ -93,10 +88,6 @@ int main(int argc, char *argv[])
         y[i] = 0.;
     }
 
-#ifdef _OPENMP
-    #pragma omp parallel
-#endif
-    {
     timing(&timeing_start, &cpuTime);
 
     for (int i=0; i<revisions; ++i)
@@ -104,7 +95,6 @@ int main(int argc, char *argv[])
 
     timing(&timeing_end, &cpuTime);
     runtime = timeing_end - timeing_start;
-    }
 
     int flops       = sell_matrix.getNonZeros()*2 ;
     double overhead = static_cast<double>(sell_matrix.getOverhead()) /
