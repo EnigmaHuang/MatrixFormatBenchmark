@@ -15,16 +15,15 @@ extern "C"
 /*****CSR_MATRIX**************************************************************/
 /**
  * sparse Matrix-Vector multiplication
- * y=A*x + beta*y
+ * y=A*x
  * using the CSR Format
  * y and x musst be allocated and valid
  */
 template<bool PLUSy=false>
 void spMV( CSR_Matrix const & A,
            double const *x,
-           double *y,
-           double alpha=1.,
-           double beta=0.)
+           double *y
+         )
 {
     double const *val  = A.getValues();
     int const *colInd  = A.getColInd();
@@ -51,12 +50,7 @@ void spMV( CSR_Matrix const & A,
             tmp += val[rowEntry] * x[ colInd[rowEntry] ];
         }
 
-        if(PLUSy)
-            y[rowID] = alpha * tmp + beta * y[rowID];
-        else
-        {
-            y[rowID] = alpha * tmp;
-        }
+        y[rowID] = tmp;
     }
 
 #ifdef USE_LIKWID
@@ -69,21 +63,18 @@ void spMV( CSR_Matrix const & A,
 /*****SELL-C-SIGMA************************************************************/
 /**
  * sparse Matrix-Vector multiplication
- * y=alpha*Ax + beta*y
- * using the CSR Format
+ * y=A*x
+ * using the Sell-C-Sigma Format
  * y and x musst be allocated and valid
- *
- * if _OPEMP is set you have to call it inside a OMP parallel region!
  *
  * x must be permutaed!
  * y will be permutaed!
  */
-template< int C, bool PLUSy=false>
+template< int C>
 void spMV( SellCSigma_Matrix<C> const & A,
            double const * x,
-           double * y,
-           double alpha=1.,
-           double beta=0.)
+           double * y
+         )
 {
     double const * val       = A.getValues();
     int const * chunkPtr     = A.getChankPtr();
@@ -126,12 +117,7 @@ void spMV( SellCSigma_Matrix<C> const & A,
                ++cRow,           ++rowID
             )
         {
-            if (PLUSy)
-                y[rowID] = alpha * tmp[cRow] + beta * y[rowID];
-            else
-            {
-                y[rowID] = alpha * tmp[cRow];
-            }
+            y[rowID] = tmp[cRow];
         }
     }
 
@@ -165,13 +151,7 @@ void spMV( SellCSigma_Matrix<C> const & A,
                 ++i,          ++row
             )
         {
-            if (PLUSy)
-                y[row] = alpha * tmp[i] + beta * y[row];
-            else
-            {
-#pragma vector nontemporal
-                y[row] = alpha * tmp[i];
-            }
+            y[row] = tmp[i];
         }
     }
 
