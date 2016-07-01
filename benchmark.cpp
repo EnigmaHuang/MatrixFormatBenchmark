@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
 {
     if (argc < 2)
     {
-        fprintf(stderr, "Usage: %s [martix-market-filename]\n", argv[0]);
+        fprintf(stderr, "Usage: %s martix-market-filename\n", argv[0]);
         exit(1);
     }
 
@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
 #endif
     for (int i=0; i<length; ++i)
     {
-        x[i] = 0.;
+        x[i] = 1.;
         y[i] = 0.;
     }
 
@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
     int sigma = 1;
 
     SellCSigma_Matrix<4> sell_matrix(mmMatrix, sigma);
-    int const length = sell_matrix.getRows();
+    int const length = sell_matrix.getPaddedRows();
 
     double timeing_start, timeing_end, runtime, cpuTime;
 
@@ -84,7 +84,7 @@ int main(int argc, char *argv[])
 #endif
     for (int i=0; i<length; ++i)
     {
-        x[i] = 0.;
+        x[i] = 1.;
         y[i] = 0.;
     }
 

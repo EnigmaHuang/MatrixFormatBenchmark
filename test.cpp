@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
 
     std::vector<double> m,n;
     
-    for (int i=0; i<identity_sell_1_1.getRows(); ++i)
+    for (int i=0; i<identity_sell_1_1.getPaddedRows(); ++i)
     {
         m.push_back(i+1);
         n.push_back(42);
@@ -53,6 +53,8 @@ int main(int argc, char *argv[])
 
     //std::cout << m;
     //std::cout << n;
+    m.resize(identity_sell_1_1.getRows());
+    n.resize(identity_sell_1_1.getRows());
     assert (m == n);
 
     std::cout << "Identity_sell-3-4: sucses!" << std::endl;
@@ -74,8 +76,8 @@ int main(int argc, char *argv[])
 
     spMV( band_csr, x.data(), y.data() );
 
-    //assert (y == x);
-    //assert (y == 1.);
+    assert (y == x);
+    assert (y == 1.);
     //std::cout << x;
 
     std::cout << "Band CSR: sucses!" << std::endl;
@@ -87,7 +89,7 @@ int main(int argc, char *argv[])
 
     std::vector<double> m,n;
     
-    for (int i=0; i<band_sell.getRows(); ++i)
+    for (int i=0; i<band_sell.getPaddedRows(); ++i)
     {
         m.push_back(1);
         n.push_back(42);
@@ -95,6 +97,8 @@ int main(int argc, char *argv[])
 
     spMV( band_sell, m.data(), n.data() );
 
+    m.resize(band_sell.getRows());
+    n.resize(band_sell.getRows());
     assert (m == n);
     assert (n == 1.);
     //std::cout << x;
@@ -160,7 +164,7 @@ int main(int argc, char *argv[])
 
     std::vector<double> m,n;
     
-    for (int i=0; i<brockenBand_csr.getRows(); ++i)
+    for (int i=0; i<brockenBand_sell.getPaddedRows(); ++i)
     {
         m.push_back(1);
         n.push_back(42);
@@ -168,6 +172,8 @@ int main(int argc, char *argv[])
 
     spMV( brockenBand_sell, m.data(), n.data() );
 
+    m.resize(brockenBand_sell.getRows());
+    n.resize(brockenBand_sell.getRows());
     if ( !(m==n) && !(n==1.) )
     {
         std::cout << "brockenBand Sell-4-100: sucses!" << std::endl;
@@ -191,7 +197,7 @@ int main(int argc, char *argv[])
 
         std::vector<double> x,yCSR,ySell;
     
-        for (int i=0; i<csrMatrix.getRows(); ++i)
+        for (int i=0; i<sellMatrix.getPaddedRows(); ++i)
         {
             x.push_back(1);
             yCSR.push_back(42);
@@ -200,6 +206,9 @@ int main(int argc, char *argv[])
 
         spMV (csrMatrix, x.data(), yCSR.data());
         spMV (sellMatrix, x.data(), ySell.data());
+
+        yCSR.resize(sellMatrix.getRows());
+        ySell.resize(sellMatrix.getRows());
 
         double csrSum  = std::accumulate(yCSR.begin(),  yCSR.end(),  0.);
         double sellSum = std::accumulate(ySell.begin(), ySell.end(), 0.);

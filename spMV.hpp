@@ -67,6 +67,7 @@ void spMV( CSR_Matrix const & A,
  * using the Sell-C-Sigma Format
  * y and x musst be allocated and valid
  *
+ * y musst be large enough to hold values for all paddded rows!
  * x must be permutaed!
  * y will be permutaed!
  */
@@ -115,7 +116,8 @@ void spMV( SellCSigma_Matrix<C> const & A,
         // TODO zweite abbruch bedingung verhindert vectoresierung
         //      entwerder muss y groß genug sein ode rirgend eine coole andere idee
         for (int cRow=0,           rowID=chunk*chunkSize;
-                 cRow<chunkSize && rowID<numRows;
+                 //cRow<chunkSize && rowID<numRows;
+                 cRow<chunkSize;
                ++cRow,           ++rowID
             )
         {

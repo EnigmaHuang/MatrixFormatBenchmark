@@ -24,6 +24,7 @@ public:
     int getChunkSize()           const { return C; }
     int getSigma()               const { return sigma_; }
     int getRows()                const { return M_; }
+    int getPaddedRows()          const { return numberOfChunks_*C; }
     int getCols()                const { return N_; }
     int getNonZeros()            const { return nz_; }
     int getNumberOfChunks()      const { return numberOfChunks_; }
