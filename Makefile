@@ -1,10 +1,14 @@
-#Use the Intel c and C++ compiler
-CC       = icc -xhost
-CPP      = icpc -xhost
+# Use the Intel c and C++ compiler
+#CC       = icc -xhost
+#CPP      = icpc -xhost
 
-#Use the GNU C and C++ compiler
+# Use the GNU C and C++ compiler
 #CC       = gcc -march=native
 #CPP      = g++ -march=native
+
+# Use clang (LLVM) compiler
+CC       = clang
+CPP      = clang++
 
 CFLAGS   = -O3 -Wall -ansi -g
 CPPFLAGS = $(CFLAGS) -std=c++11
