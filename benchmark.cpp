@@ -5,6 +5,7 @@
 
 #include <iostream>
 #include <cassert>
+#include <cstdlib>
 
 extern "C"
 {
@@ -16,7 +17,7 @@ int main(int argc, char *argv[])
 {
     if (argc < 2)
     {
-        fprintf(stderr, "Usage: %s martix-market-filename\n", argv[0]);
+        fprintf(stderr, "Usage: %s martix-market-filename [C [sigma [revisions] ] ]\n", argv[0]);
         exit(1);
     }
 
@@ -24,7 +25,9 @@ int main(int argc, char *argv[])
     MMreader mmMatrix (argv[1]);
 
 
-    int const revisions = 100;  //TODO comandline parameter
+    int revisions = 100;
+    if (argc > 4)
+        revisions = std::atoi(argv[4]);
 
     /******CSR*******************************************************/
     {
@@ -36,6 +39,9 @@ int main(int argc, char *argv[])
     // create vectors (NUMA awareness!)
     double *x = new double[length];
     double *y = new double[length];
+
+    std::cout << "Starting CSR" << std::endl;
+
 #ifdef _OPENMP
     #pragma omp parallel for schedule(runtime)
 #endif
@@ -66,12 +72,16 @@ int main(int argc, char *argv[])
     /******SELL*******************************************************/
     {
 
-    //TODO compile for different Cs
-    //TODO sigma als comand line parameter
     int C = 4;
-    int sigma = 1;
+    if (argc > 2)
+        C = std::atoi(argv[2]);
 
-    SellCSigma_Matrix<4> sell_matrix(mmMatrix, sigma);
+    int sigma = 1;
+    if (argc > 3)
+        sigma = std::atoi(argv[3]);
+
+
+    SellCSigma_Matrix sell_matrix(mmMatrix, C, sigma);
     int const length = sell_matrix.getPaddedRows();
 
     double timeing_start, timeing_end, runtime, cpuTime;
@@ -79,6 +89,9 @@ int main(int argc, char *argv[])
     // create vectors (NUMA awareness!)
     double *x = new double[length];
     double *y = new double[length];
+
+    std::cout << "Starting Sell-" << C << "-" << sigma << std::endl;
+
 #ifdef _OPENMP
     #pragma omp parallel for schedule(runtime)
 #endif

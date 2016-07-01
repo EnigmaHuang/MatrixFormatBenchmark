@@ -14,17 +14,16 @@
 
 
 /*****Class SELL-C-Sigam******************************************************/
-template <int C>
 class SellCSigma_Matrix
 {
 public:
-    SellCSigma_Matrix( MMreader mmMatrix, int sigma );  // constructor
-    ~SellCSigma_Matrix();                               // destructor
+    SellCSigma_Matrix( MMreader mmMatrix, int C, int sigma );   // constructor
+    ~SellCSigma_Matrix();                                       // destructor
 
-    int getChunkSize()           const { return C; }
+    int getChunkSize()           const { return C_; }
     int getSigma()               const { return sigma_; }
     int getRows()                const { return M_; }
-    int getPaddedRows()          const { return numberOfChunks_*C; }
+    int getPaddedRows()          const { return numberOfChunks_*C_; }
     int getCols()                const { return N_; }
     int getNonZeros()            const { return nz_; }
     int getNumberOfChunks()      const { return numberOfChunks_; }
@@ -42,7 +41,7 @@ public:
     SellCSigma_Matrix & operator= (SellCSigma_Matrix && other) = delete;       // move assignment
 
 private:
-    int const sigma_;
+    int const C_, sigma_;
     int M_, N_, nz_, numberOfChunks_, overhead_;
     int *colInd_, *chunkPtr_, *chunkLength_;
     int *permute_;      // Sell-C-sigma row ID -> orginal row ID
@@ -54,9 +53,8 @@ private:
 /**
  * constructor
  */
-template <int C>
-SellCSigma_Matrix<C>::SellCSigma_Matrix( MMreader mmMatrix, int const sigma )
-:sigma_(sigma)
+SellCSigma_Matrix::SellCSigma_Matrix( MMreader mmMatrix, int C, int const sigma )
+:C_(C), sigma_(sigma)
 ,M_(mmMatrix.getRows()), N_(mmMatrix.getCols())
 ,nz_(mmMatrix.getNonZeros()), numberOfChunks_((M_-1)/C+1)
 ,colInd_(nullptr)
@@ -196,8 +194,7 @@ SellCSigma_Matrix<C>::SellCSigma_Matrix( MMreader mmMatrix, int const sigma )
 }
 
 // destructor
-template<int C>
-SellCSigma_Matrix<C>::~SellCSigma_Matrix()
+SellCSigma_Matrix::~SellCSigma_Matrix()
 {
     delete[] val_;
     delete[] antiPermute_;
@@ -208,6 +205,7 @@ SellCSigma_Matrix<C>::~SellCSigma_Matrix()
 }
 
 /*****Free Functions*CSR_MATRIX***********************************************/
+
 
 
 #endif

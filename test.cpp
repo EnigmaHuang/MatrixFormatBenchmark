@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
 
 
 
-    SellCSigma_Matrix<3> identity_sell_1_1 (identity,4);
+    SellCSigma_Matrix identity_sell_1_1 (identity,2,5);
 
     std::vector<double> m,n;
     
@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
     n.resize(identity_sell_1_1.getRows());
     assert (m == n);
 
-    std::cout << "Identity_sell-3-4: sucses!" << std::endl;
+    std::cout << "Identity_sell-2-5: sucses!" << std::endl;
     }
 
 /****TEST: MORE COMPLEX MAXTRIX***********************************************/
@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
 
 
 
-    SellCSigma_Matrix<2> band_sell (band,4);
+    SellCSigma_Matrix band_sell (band,2,4);
 
     std::vector<double> m,n;
     
@@ -127,7 +127,7 @@ int main(int argc, char *argv[])
     assert (y == 1.);
     //std::cout << x;
 
-    std::cout << "Symmetric CSR: sucses!" << std::endl;
+    std::cout << "Symmetric: sucses!" << std::endl;
     }
 
 
@@ -160,7 +160,7 @@ int main(int argc, char *argv[])
 
 
 
-    SellCSigma_Matrix<4> brockenBand_sell (brockenBand, 100);
+    SellCSigma_Matrix brockenBand_sell (brockenBand, 4, 100);
 
     std::vector<double> m,n;
     
@@ -193,7 +193,7 @@ int main(int argc, char *argv[])
     {
         MMreader mmMatrix (argv[1]);
         CSR_Matrix csrMatrix(mmMatrix);
-        SellCSigma_Matrix<4> sellMatrix(mmMatrix,128);
+        SellCSigma_Matrix sellMatrix(mmMatrix,4, 128);
 
         std::vector<double> x,yCSR,ySell;
     

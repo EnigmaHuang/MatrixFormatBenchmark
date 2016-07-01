@@ -61,6 +61,7 @@ void spMV( CSR_Matrix const & A,
 
 
 /*****SELL-C-SIGMA************************************************************/
+
 /**
  * sparse Matrix-Vector multiplication
  * y=A*x
@@ -72,7 +73,7 @@ void spMV( CSR_Matrix const & A,
  * y will be permutaed!
  */
 template< int C>
-void spMV( SellCSigma_Matrix<C> const & A,
+void spMV( SellCSigma_Matrix const & A,
            double const * x,
            double * y
          )
@@ -113,8 +114,6 @@ void spMV( SellCSigma_Matrix<C> const & A,
         }
         
         // write back result of y = alpha Ax + beta y
-        // TODO zweite abbruch bedingung verhindert vectoresierung
-        //      entwerder muss y groß genug sein ode rirgend eine coole andere idee
         for (int cRow=0,           rowID=chunk*chunkSize;
                  //cRow<chunkSize && rowID<numRows;
                  cRow<chunkSize;
@@ -128,6 +127,39 @@ void spMV( SellCSigma_Matrix<C> const & A,
 #ifdef USE_LIKWID
         LIKWID_MARKER_STOP("SpMV_Sell-C-sigma");
 #endif
+}
+
+/*wrapper function for dynamic dispatshing*/
+void spMV( SellCSigma_Matrix const & A,
+           double const * x,
+           double * y
+         )
+{
+    int C = A.getChunkSize();
+
+    if (1 == C)
+        return spMV<1>(A,x,y);
+    else if (2 == C)
+        return spMV<2>(A,x,y);
+    else if (4 == C)
+        return spMV<4>(A,x,y);
+    else if (16 == C)
+        return spMV<16>(A,x,y);
+    else if (32 == C)
+        return spMV<32>(A,x,y);
+#ifdef SET_C
+    else if (SET_C == C)
+        return spMV<SET_C>(A,x,y);
+#endif
+    else
+    {
+        std::cout << "spMV Kernel for C="<< C << " is not compiled."
+                  << " Use 'SET_C=C' as compile time flag to creat this function."
+                  << "\nC=1 is used as a fall back function."
+                  << std::endl;
+        return spMV<1>(A,x,y);
+    }
+
 }
 
 
