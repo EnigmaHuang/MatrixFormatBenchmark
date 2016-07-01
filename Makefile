@@ -1,6 +1,12 @@
-CC       = icc
-CPP      = icpc
-CFLAGS   = -O3 -xhost -march=native -Wall -Wshadow -ansi -g
+#Use the Intel c and C++ compiler
+CC       = icc -xhost
+CPP      = icpc -xhost
+
+#Use the GNU C and C++ compiler
+#CC       = gcc -march=native
+#CPP      = g++ -march=native
+
+CFLAGS   = -O3 -Wall -ansi -g
 CPPFLAGS = $(CFLAGS) -std=c++11
 LDFLAGS  = 
 OMPFLAG  = -fopenmp

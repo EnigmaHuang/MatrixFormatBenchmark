@@ -90,7 +90,7 @@ MMreader::MMreader(char const *fileName)
         }
         else if ( mm_is_complex(matcode))
         {
-            fscanf(f, "%d %d %lg %*lg\n", &row, &col, &val);
+            fscanf(f, "%d %d %lg %*g\n", &row, &col, &val);
             //TODO fully suport
         }
         else

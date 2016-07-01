@@ -121,8 +121,8 @@ SellCSigma_Matrix::SellCSigma_Matrix( MMreader mmMatrix, int C, int const sigma 
                                               0
                                              );
 
-    val_    = new(double[valueMemoryUsage]);
-    colInd_ = new(int   [valueMemoryUsage]);
+    val_    = new double[valueMemoryUsage];
+    colInd_ = new int   [valueMemoryUsage];
 
     // calulate memory overhead
     overhead_ = valueMemoryUsage - getNonZeros();

@@ -29,7 +29,6 @@ void spMV( CSR_Matrix const & A,
     int const *colInd  = A.getColInd();
     int const *rowPtr  = A.getRowPtr();
     int const numRows  = A.getRows();
-    int const nonZeros = A.getNonZeros();
 
 #ifdef USE_LIKWID
     LIKWID_MARKER_THREADINIT;
@@ -82,8 +81,6 @@ void spMV( SellCSigma_Matrix const & A,
     int const * chunkPtr     = A.getChankPtr();
     int const * chunkLength  = A.getChankLength();
     int const * colInd       = A.getColInd();
-    int const numRows        = A.getRows();
-    int const nonZeros       = A.getNonZeros();
     int const numberOfChunks = A.getNumberOfChunks();
     int const chunkSize      = C;
 
@@ -106,6 +103,7 @@ void spMV( SellCSigma_Matrix const & A,
         {
             // (auto) vectorised loop over all rows in chunk
             #pragma simd
+            //TODO with gcc  (was macht der compiler so?, omp simd, ?????
             for (int cRow=0; cRow<chunkSize; ++cRow)
             {
                 tmp[cRow] += val      [chunkOffset + rowEntry*chunkSize + cRow]
@@ -115,7 +113,6 @@ void spMV( SellCSigma_Matrix const & A,
         
         // write back result of y = alpha Ax + beta y
         for (int cRow=0,           rowID=chunk*chunkSize;
-                 //cRow<chunkSize && rowID<numRows;
                  cRow<chunkSize;
                ++cRow,           ++rowID
             )
