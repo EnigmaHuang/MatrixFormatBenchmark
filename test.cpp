@@ -7,6 +7,8 @@
 #include <vector>
 #include <tuple>
 #include <cassert>
+#include <numeric>
+#include <cmath>
 
 int main(int argc, char *argv[])
 {
@@ -145,6 +147,11 @@ int main(int argc, char *argv[])
     {
         std::cout << "brockenBand CSR: sucses!" << std::endl;
     }
+    else
+    {
+        std::cout << "Faild!" << std::endl;
+        return 1;
+    }
 
 
 
@@ -165,9 +172,54 @@ int main(int argc, char *argv[])
     {
         std::cout << "brockenBand Sell-4-100: sucses!" << std::endl;
     }
+    else
+    {
+        std::cout << "Faild!" << std::endl;
+        return 1;
+    }
 
 
     }
+
+/****Randome matrix test***********************************************/
+    std::cout << "********Randome Matrix Test*****************************" << std::endl;
+    if(argc == 2)
+    {
+        MMreader mmMatrix (argv[1]);
+        CSR_Matrix csrMatrix(mmMatrix);
+        SellCSigma_Matrix<4> sellMatrix(mmMatrix,128);
+
+        std::vector<double> x,yCSR,ySell;
+    
+        for (int i=0; i<csrMatrix.getRows(); ++i)
+        {
+            x.push_back(1);
+            yCSR.push_back(42);
+            ySell.push_back(42);
+        }
+
+        spMV (csrMatrix, x.data(), yCSR.data());
+        spMV (sellMatrix, x.data(), ySell.data());
+
+        double csrSum  = std::accumulate(yCSR.begin(),  yCSR.end(),  0.);
+        double sellSum = std::accumulate(ySell.begin(), ySell.end(), 0.);
+
+        double epsilon = 1e-6;
+
+        if (std::abs(csrSum - sellSum) <= epsilon)
+        {
+            std::cout << "Randome matrix test: sucses!" << std::endl;
+        }
+        else
+        {
+            std::cout << "Faild!" << std::endl;
+            return 1;
+        }
+    }
+
+
+
+
 
     return 0;
 }
