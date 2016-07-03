@@ -19,7 +19,6 @@ extern "C"
  * using the CSR Format
  * y and x musst be allocated and valid
  */
-template<bool PLUSy=false>
 void spMV( CSR_Matrix const & A,
            double const *x,
            double *y
@@ -104,6 +103,7 @@ void spMV( SellCSigma_Matrix const & A,
             // (auto) vectorised loop over all rows in chunk
             #pragma simd
             //TODO with gcc  (was macht der compiler so?, omp simd, ?????
+            //TODO und calng??? wasrum ist der so schnell
             for (int cRow=0; cRow<chunkSize; ++cRow)
             {
                 tmp[cRow] += val      [chunkOffset + rowEntry*chunkSize + cRow]
