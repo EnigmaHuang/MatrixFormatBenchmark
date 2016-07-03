@@ -101,7 +101,7 @@ void spMV( SellCSigma_Matrix const & A,
         for (int rowEntry=0; rowEntry<chunkLength[chunk]; ++rowEntry)
         {
             // (auto) vectorised loop over all rows in chunk
-            #pragma simd
+            #pragma omp simd
             //TODO with gcc  (was macht der compiler so?, omp simd, ?????
             //TODO und calng??? wasrum ist der so schnell
             for (int cRow=0; cRow<chunkSize; ++cRow)

@@ -3,24 +3,21 @@
 #CPP      = icpc -xhost
 
 # Use the GNU C and C++ compiler
-#CC       = gcc -march=native
-#CPP      = g++ -march=native
+CC       = gcc -march=native -ftree-vectorizer-verbose=5
+CPP      = g++ -march=native -ftree-vectorizer-verbose=5
 
 # Use clang (LLVM) compiler
-CC       = clang
-CPP      = clang++
+#CC       = clang
+#CPP      = clang++
 
-CFLAGS   = -O3 -Wall -ansi -g
+CFLAGS   = -O3 -Wall -ansi -g -fopenmp
 CPPFLAGS = $(CFLAGS) -std=c++11
 LDFLAGS  = 
-OMPFLAG  = -fopenmp
 RM       = rm -f
 
-BIN                 = test_seriell test_omp benchmark_seriell benchmark_omp
-OFILES_testSer      = mmio/mmio.o MMreader.o CSRMatrix_ser.o timing/timing.o test.o
-OFILES_testOMP      = mmio/mmio.o MMreader.o CSRMatrix_omp.o timing/timing.o test.o
-OFILES_benchmarkSer = mmio/mmio.o MMreader.o CSRMatrix_ser.o timing/timing.o benchmark.o
-OFILES_benchmarkOMP = mmio/mmio.o MMreader.o CSRMatrix_omp.o timing/timing.o benchmark_omp.o
+BIN                 = test_omp benchmark_omp
+OFILES_testOMP      = mmio/mmio.o MMreader.o CSRMatrix.o timing/timing.o test.o
+OFILES_benchmarkOMP = mmio/mmio.o MMreader.o CSRMatrix.o timing/timing.o benchmark.o
 
 
 .PHONY: all clean
@@ -28,19 +25,15 @@ OFILES_benchmarkOMP = mmio/mmio.o MMreader.o CSRMatrix_omp.o timing/timing.o ben
 all: $(BIN)
 
 clean:
-	$(RM) $(BIN) $(OFILES_example) $(OFILES_testSer) $(OFILES_testOMP) $(OFILES_benchmarkSer) $(OFILES_benchmarkOMP)
+	$(RM) $(BIN) $(OFILES_testOMP) $(OFILES_benchmarkOMP)
 
 
 ##########BIN#################################################################
-test_seriell: $(OFILES_testSer)
-	$(CPP) $(CPPFLAGS)            -o $@ $^ $(LDFLAGS)
 test_omp:     $(OFILES_testOMP)
-	$(CPP) $(CPPFLAGS) $(OMPFLAG) -o $@ $^ $(LDFLAGS)
+	$(CPP) $(CPPFLAGS) -o $@ $^ $(LDFLAGS)
 
-benchmark_seriell: $(OFILES_benchmarkSer)
-	$(CPP) $(CPPFLAGS)            -o $@ $^ $(LDFLAGS)
 benchmark_omp:     $(OFILES_benchmarkOMP)
-	$(CPP) $(CPPFLAGS) $(OMPFLAG) -o $@ $^ $(LDFLAGS)
+	$(CPP) $(CPPFLAGS) -o $@ $^ $(LDFLAGS)
 
 
 
@@ -57,16 +50,9 @@ timing/timing.o: timing/timing.c timing/timing.h
 .cpp.o:
 	$(CPP) $(CPPFLAGS) -c $<
 
-CSRMatrix_ser.o: CSRMatrix.cpp CSRMatrix.hpp MMreader.hpp
-	$(CPP) $(CPPFLAGS) -c -o $@ $<
-CSRMatrix_omp.o: CSRMatrix.cpp CSRMatrix.hpp MMreader.hpp
-	$(CPP) $(CPPFLAGS) $(OMPFLAG) -c -o $@ $<
-
-benchmark_omp.o: benchmark.cpp CSRMatrix.hpp SellCSigma.hpp MMreader.hpp
-	$(CPP) $(CPPFLAGS) $(OMPFLAG) -c -o $@ $<
-
 
 ##########DEPENDENCIES#######################################################
 test.o: test.cpp CSRMatrix.hpp SellCSigma.hpp MMreader.hpp spMV.hpp
-benchmark.o: benchmark.cpp MMreader.hpp CSRMatrix.hpp SellCSigma.hpp spMV.hpp
 MMreader.o: MMreader.cpp MMreader.hpp mmio/mmio.h
+CSRMatrix.o: CSRMatrix.cpp CSRMatrix.hpp MMreader.hpp
+benchmark.o: benchmark.cpp CSRMatrix.hpp SellCSigma.hpp MMreader.hpp
