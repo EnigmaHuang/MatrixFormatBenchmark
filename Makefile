@@ -3,14 +3,14 @@
 #CPP      = icpc -xhost
 
 # Use the GNU C and C++ compiler
-CC       = gcc -march=native -ftree-vectorizer-verbose=5
-CPP      = g++ -march=native -ftree-vectorizer-verbose=5
+CC       = gcc -march=native
+CPP      = g++ -march=native
 
 # Use clang (LLVM) compiler
 #CC       = clang
 #CPP      = clang++
 
-CFLAGS   = -O3 -Wall -ansi -g -fopenmp
+CFLAGS   = -O3 -Wall -ansi -g -fopenmp -DVERBOSE
 CPPFLAGS = $(CFLAGS) -std=c++11
 LDFLAGS  = 
 RM       = rm -f
@@ -55,4 +55,4 @@ timing/timing.o: timing/timing.c timing/timing.h
 test.o: test.cpp CSRMatrix.hpp SellCSigma.hpp MMreader.hpp spMV.hpp
 MMreader.o: MMreader.cpp MMreader.hpp mmio/mmio.h
 CSRMatrix.o: CSRMatrix.cpp CSRMatrix.hpp MMreader.hpp
-benchmark.o: benchmark.cpp CSRMatrix.hpp SellCSigma.hpp MMreader.hpp
+benchmark.o: benchmark.cpp CSRMatrix.hpp SellCSigma.hpp MMreader.hpp spMV.hpp

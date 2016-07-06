@@ -3,9 +3,11 @@
 #include "SellCSigma.hpp"
 #include "spMV.hpp"
 
+#include <omp.h>
 #include <iostream>
 #include <cassert>
 #include <cstdlib>
+#include <string>
 
 extern "C"
 {
@@ -29,6 +31,38 @@ int main(int argc, char *argv[])
     if (argc > 4)
         revisions = std::atoi(argv[4]);
 
+
+#ifdef VERBOSE
+#pragma omp parallel
+#pragma omp master
+{
+    int chunkSize;
+    omp_sched_t schedType;
+    std::string schedName;
+
+    omp_get_schedule(&schedType, &chunkSize);
+
+    switch (schedType)
+    {
+        case omp_sched_static : schedName = "static"; break;
+        case omp_sched_dynamic : schedName = "dynamic"; break;
+        case omp_sched_guided : schedName = "guided"; break;
+        case omp_sched_auto: schedName = "auto"; break;
+    }
+
+    std::cout   << "Matrix Format Benchmark:"
+                << "\n\trevisions: " << revisions
+                << "\n\tnumber of threads: " << omp_get_num_threads()
+                << "\n\tschedular: (" << schedName << ", " << chunkSize << ")"
+                << "\n\tmatrix size: " << mmMatrix.getRows() << "x" << mmMatrix.getCols()
+                << "\n\tnumber of nonzeros: " << mmMatrix.getNonZeros()
+                << std::endl;
+}
+#endif
+
+
+
+
     /******CSR*******************************************************/
     {
     CSR_Matrix csr_matrix(mmMatrix);
@@ -42,9 +76,7 @@ int main(int argc, char *argv[])
 
     std::cout << "Starting CSR" << std::endl;
 
-#ifdef _OPENMP
     #pragma omp parallel for schedule(runtime)
-#endif
     for (int i=0; i<length; ++i)
     {
         x[i] = 1.;
@@ -92,9 +124,7 @@ int main(int argc, char *argv[])
 
     std::cout << "Starting Sell-" << C << "-" << sigma << std::endl;
 
-#ifdef _OPENMP
     #pragma omp parallel for schedule(runtime)
-#endif
     for (int i=0; i<length; ++i)
     {
         x[i] = 1.;
