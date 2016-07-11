@@ -1,18 +1,18 @@
 # Use the Intel c and C++ compiler
-#CC       = icc -xhost
-#CPP      = icpc -xhost
+CC       = icc -xhost
+CPP      = icpc -xhost
 
 # Use the GNU C and C++ compiler
-CC       = gcc -march=native
-CPP      = g++ -march=native
+#CC       = gcc -march=native
+#CPP      = g++ -march=native
 
 # Use clang (LLVM) compiler
 #CC       = clang
 #CPP      = clang++
 
-CFLAGS   = -O3 -Wall -ansi -g -fopenmp -DVERBOSE
+CFLAGS   = -O3 -Wall -ansi -g -fopenmp -DVERBOSE -DUSE_LIKWID $(LIKWID_INC) -DLIKWID_PERFMON
 CPPFLAGS = $(CFLAGS) -std=c++11
-LDFLAGS  = 
+LDFLAGS  =  $(LIKWID_LIB) -llikwid -lm
 RM       = rm -f
 
 BIN                 = test_omp benchmark_omp

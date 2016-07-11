@@ -29,31 +29,30 @@ void spMV( CSR_Matrix const & A,
     int const *rowPtr  = A.getRowPtr();
     int const numRows  = A.getRows();
 
+#pragma omp parallel
+    {
 #ifdef USE_LIKWID
-    LIKWID_MARKER_THREADINIT;
     LIKWID_MARKER_START("SpMV_CSR");
 #endif
 
-    // loop over all rows
-#ifdef _OPENMP
-    #pragma omp parallel for schedule(runtime)
-#endif
-    for (int rowID=0; rowID<numRows; ++rowID)
-    {
-        double tmp = 0.;
-
-        // loop over all elements in row
-        for (int rowEntry=rowPtr[rowID]; rowEntry<rowPtr[rowID+1]; ++rowEntry)
+        // loop over all rows
+        #pragma omp for schedule(runtime)
+        for (int rowID=0; rowID<numRows; ++rowID)
         {
-            tmp += val[rowEntry] * x[ colInd[rowEntry] ];
+            double tmp = 0.;
+
+            // loop over all elements in row
+            for (int rowEntry=rowPtr[rowID]; rowEntry<rowPtr[rowID+1]; ++rowEntry)
+            {
+                tmp += val[rowEntry] * x[ colInd[rowEntry] ];
+            }
+
+            y[rowID] = tmp;
         }
-
-        y[rowID] = tmp;
-    }
-
 #ifdef USE_LIKWID
     LIKWID_MARKER_STOP("SpMV_CSR");
 #endif
+    }
 }
 
 
@@ -83,47 +82,45 @@ void spMV( SellCSigma_Matrix const & A,
     int const numberOfChunks = A.getNumberOfChunks();
     int const chunkSize      = C;
 
+#pragma omp parallel
+    {
 #ifdef USE_LIKWID
-    LIKWID_MARKER_THREADINIT;
     LIKWID_MARKER_START("SpMV_Sell-C-sigma");
 #endif
 
-#ifdef _OPENMP
-    #pragma omp parallel for schedule(runtime)
-#endif
-    // loop over all chunks
-    for (int chunk=0; chunk < numberOfChunks; ++chunk)
-    {
-        int chunkOffset = chunkPtr[chunk];
-        double tmp[chunkSize] {};
-
-        // loop over all row elements in chunk
-        for (int rowEntry=0; rowEntry<chunkLength[chunk]; ++rowEntry)
+        #pragma omp for schedule(runtime)
+        // loop over all chunks
+        for (int chunk=0; chunk < numberOfChunks; ++chunk)
         {
-            // (auto) vectorised loop over all rows in chunk
-            #pragma omp simd
-            //TODO with gcc  (was macht der compiler so?, omp simd, ?????
-            //TODO und calng??? wasrum ist der so schnell
-            for (int cRow=0; cRow<chunkSize; ++cRow)
+            int chunkOffset = chunkPtr[chunk];
+            double tmp[chunkSize] {};
+
+            // loop over all row elements in chunk
+            for (int rowEntry=0; rowEntry<chunkLength[chunk]; ++rowEntry)
             {
-                tmp[cRow] += val      [chunkOffset + rowEntry*chunkSize + cRow]
-                           * x[ colInd[chunkOffset + rowEntry*chunkSize + cRow] ];
+                // (auto) vectorised loop over all rows in chunk
+                #pragma omp simd
+                for (int cRow=0; cRow<chunkSize; ++cRow)
+                {
+                    tmp[cRow] += val      [chunkOffset + rowEntry*chunkSize + cRow]
+                               * x[ colInd[chunkOffset + rowEntry*chunkSize + cRow] ];
+                }
+            }
+            
+            // write back result of y = alpha Ax + beta y
+            for (int cRow=0,           rowID=chunk*chunkSize;
+                    cRow<chunkSize;
+                ++cRow,           ++rowID
+                )
+            {
+                y[rowID] = tmp[cRow];
             }
         }
-        
-        // write back result of y = alpha Ax + beta y
-        for (int cRow=0,           rowID=chunk*chunkSize;
-                 cRow<chunkSize;
-               ++cRow,           ++rowID
-            )
-        {
-            y[rowID] = tmp[cRow];
-        }
-    }
 
 #ifdef USE_LIKWID
         LIKWID_MARKER_STOP("SpMV_Sell-C-sigma");
 #endif
+    }
 }
 
 /*wrapper function for dynamic dispatshing*/
