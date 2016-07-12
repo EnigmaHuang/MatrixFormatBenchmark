@@ -146,6 +146,7 @@ int main(int argc, char *argv[])
 
     std::cout << "runtime Sell-" << C << "-" << sigma << ": " << runtime << " sec."
               << " performance: " << static_cast<double>(flops)*revisions / runtime
+              << " flop/s"
               << " overhead: " << overhead*100 << "%"
               << std::endl;
 
