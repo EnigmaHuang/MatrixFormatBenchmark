@@ -12,6 +12,10 @@
 extern "C"
 {
 #include "timing/timing.h"
+
+#ifdef USE_LIKWID
+#include <likwid.h>
+#endif
 }
 
 
@@ -30,7 +34,6 @@ int main(int argc, char *argv[])
     int revisions = 100;
     if (argc > 4)
         revisions = std::atoi(argv[4]);
-
 
 #ifdef VERBOSE
 #pragma omp parallel
@@ -61,7 +64,14 @@ int main(int argc, char *argv[])
 #endif
 
 
+#ifdef USE_LIKWID
+    LIKWID_MARKER_INIT;
 
+#pragma omp parallel
+{
+    LIKWID_MARKER_THREADINIT;
+}
+#endif
 
     /******CSR*******************************************************/
     {
@@ -154,5 +164,8 @@ int main(int argc, char *argv[])
     delete[] y;
     }
 
+#ifdef USE_LIKWID
+    LIKWID_MARKER_CLOSE;
+#endif
     return 0;
 }
