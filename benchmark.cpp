@@ -1,5 +1,4 @@
 #include "MMreader.hpp"
-//#include "CSRMatrix.hpp"
 #include "SellCSigma.hpp"
 #include "spMV.hpp"
 
@@ -8,6 +7,7 @@
 #include <cassert>
 #include <cstdlib>
 #include <string>
+#include <utility>
 
 extern "C"
 {
@@ -96,7 +96,12 @@ int main(int argc, char *argv[])
     timing(&timeing_start, &cpuTime);
 
     for (int i=0; i<revisions; ++i)
+    {
         spMV( csr_matrix, x, y );
+
+        // swap pointer
+        std::swap(x,y);
+    }
 
     timing(&timeing_end, &cpuTime);
     runtime = timeing_end - timeing_start;
@@ -135,6 +140,7 @@ int main(int argc, char *argv[])
     std::cout << "Starting Sell-" << C << "-" << sigma << std::endl;
 
     #pragma omp parallel for schedule(runtime)
+    //TODO like in kernel
     for (int i=0; i<length; ++i)
     {
         x[i] = 1.;
@@ -144,7 +150,12 @@ int main(int argc, char *argv[])
     timing(&timeing_start, &cpuTime);
 
     for (int i=0; i<revisions; ++i)
+    {
         spMV( sell_matrix, x, y );
+
+        // swap pointer
+        std::swap(x,y);
+    }
 
     timing(&timeing_end, &cpuTime);
     runtime = timeing_end - timeing_start;
