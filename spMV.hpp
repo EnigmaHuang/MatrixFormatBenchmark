@@ -15,7 +15,7 @@ extern "C"
 /*****CSR_MATRIX**************************************************************/
 /**
  * sparse Matrix-Vector multiplication
- * y=A*x
+ * y= y + A*x
  * using the CSR Format
  * y and x musst be allocated and valid
  */
@@ -39,7 +39,7 @@ void spMV( CSR_Matrix const & A,
         #pragma omp for schedule(runtime)
         for (int rowID=0; rowID<numRows; ++rowID)
         {
-            double tmp = 0.;
+            double tmp = y[rowID];
 
             // loop over all elements in row
             for (int rowEntry=rowPtr[rowID]; rowEntry<rowPtr[rowID+1]; ++rowEntry)
@@ -61,7 +61,7 @@ void spMV( CSR_Matrix const & A,
 
 /**
  * sparse Matrix-Vector multiplication
- * y=A*x
+ * y= y + A*x
  * using the Sell-C-Sigma Format
  * y and x musst be allocated and valid
  *
@@ -93,7 +93,16 @@ void spMV( SellCSigma_Matrix const & A,
         for (int chunk=0; chunk < numberOfChunks; ++chunk)
         {
             int chunkOffset = chunkPtr[chunk];
-            double tmp[chunkSize] {};
+
+            // create tempory vector with vaues from y (y = y + Ax)
+            double tmp[chunkSize];
+            for (int cRow=0,           rowID=chunk*chunkSize;
+                     cRow<chunkSize;
+                   ++cRow,           ++rowID
+                )
+            {
+                tmp[cRow] = y[rowID];
+            }
 
             // loop over all row elements in chunk
             for (int rowEntry=0; rowEntry<chunkLength[chunk]; ++rowEntry)
@@ -107,10 +116,10 @@ void spMV( SellCSigma_Matrix const & A,
                 }
             }
             
-            // write back result of y = alpha Ax + beta y
+            // write back result
             for (int cRow=0,           rowID=chunk*chunkSize;
-                    cRow<chunkSize;
-                ++cRow,           ++rowID
+                     cRow<chunkSize;
+                   ++cRow,           ++rowID
                 )
             {
                 y[rowID] = tmp[cRow];
