@@ -94,14 +94,26 @@ int main(int argc, char *argv[])
     }
 
     timing(&timeing_start, &cpuTime);
+#ifdef USE_LIKWID
+#pragma omp parallel
+{
+    LIKWID_MARKER_START("SpMV_CSR");
+}
+#endif
 
     for (int i=0; i<revisions; ++i)
     {
         spMV( csr_matrix, x, y );
-
         // swap pointer
         std::swap(x,y);
     }
+
+#ifdef USE_LIKWID
+#pragma omp parallel
+{
+    LIKWID_MARKER_STOP("SpMV_CSR");
+}
+#endif
 
     timing(&timeing_end, &cpuTime);
     runtime = timeing_end - timeing_start;
@@ -148,14 +160,26 @@ int main(int argc, char *argv[])
     }
 
     timing(&timeing_start, &cpuTime);
+#ifdef USE_LIKWID
+#pragma omp parallel
+{
+    LIKWID_MARKER_START("SpMV_SELL-C-SIGMA");
+}
+#endif
 
     for (int i=0; i<revisions; ++i)
     {
         spMV( sell_matrix, x, y );
-
         // swap pointer
         std::swap(x,y);
     }
+
+#ifdef USE_LIKWID
+#pragma omp parallel
+{
+    LIKWID_MARKER_STOP("SpMV_SELL-C-SIGMA");
+}
+#endif
 
     timing(&timeing_end, &cpuTime);
     runtime = timeing_end - timeing_start;

@@ -29,29 +29,19 @@ void spMV( CSR_Matrix const & A,
     int const *rowPtr  = A.getRowPtr();
     int const numRows  = A.getRows();
 
-#pragma omp parallel
+    // loop over all rows
+#pragma omp parallel for schedule(runtime)
+    for (int rowID=0; rowID<numRows; ++rowID)
     {
-#ifdef USE_LIKWID
-    LIKWID_MARKER_START("SpMV_CSR");
-#endif
+        double tmp = y[rowID];
 
-        // loop over all rows
-        #pragma omp for schedule(runtime)
-        for (int rowID=0; rowID<numRows; ++rowID)
+        // loop over all elements in row
+        for (int rowEntry=rowPtr[rowID]; rowEntry<rowPtr[rowID+1]; ++rowEntry)
         {
-            double tmp = y[rowID];
-
-            // loop over all elements in row
-            for (int rowEntry=rowPtr[rowID]; rowEntry<rowPtr[rowID+1]; ++rowEntry)
-            {
-                tmp += val[rowEntry] * x[ colInd[rowEntry] ];
-            }
-
-            y[rowID] = tmp;
+            tmp += val[rowEntry] * x[ colInd[rowEntry] ];
         }
-#ifdef USE_LIKWID
-    LIKWID_MARKER_STOP("SpMV_CSR");
-#endif
+
+        y[rowID] = tmp;
     }
 }
 
@@ -82,53 +72,42 @@ void spMV( SellCSigma_Matrix const & A,
     int const numberOfChunks = A.getNumberOfChunks();
     int const chunkSize      = C;
 
-#pragma omp parallel
+#pragma omp parallel for schedule(runtime)
+    // loop over all chunks
+    for (int chunk=0; chunk < numberOfChunks; ++chunk)
     {
-#ifdef USE_LIKWID
-    LIKWID_MARKER_START("SpMV_Sell-C-sigma");
-#endif
+        int chunkOffset = chunkPtr[chunk];
 
-        #pragma omp for schedule(runtime)
-        // loop over all chunks
-        for (int chunk=0; chunk < numberOfChunks; ++chunk)
+        // create tempory vector with vaues from y (y = y + Ax)
+        double tmp[chunkSize];
+        for (int cRow=0,           rowID=chunk*chunkSize;
+                    cRow<chunkSize;
+                ++cRow,           ++rowID
+            )
         {
-            int chunkOffset = chunkPtr[chunk];
-
-            // create tempory vector with vaues from y (y = y + Ax)
-            double tmp[chunkSize];
-            for (int cRow=0,           rowID=chunk*chunkSize;
-                     cRow<chunkSize;
-                   ++cRow,           ++rowID
-                )
-            {
-                tmp[cRow] = y[rowID];
-            }
-
-            // loop over all row elements in chunk
-            for (int rowEntry=0; rowEntry<chunkLength[chunk]; ++rowEntry)
-            {
-                // (auto) vectorised loop over all rows in chunk
-                #pragma omp simd
-                for (int cRow=0; cRow<chunkSize; ++cRow)
-                {
-                    tmp[cRow] += val      [chunkOffset + rowEntry*chunkSize + cRow]
-                               * x[ colInd[chunkOffset + rowEntry*chunkSize + cRow] ];
-                }
-            }
-            
-            // write back result
-            for (int cRow=0,           rowID=chunk*chunkSize;
-                     cRow<chunkSize;
-                   ++cRow,           ++rowID
-                )
-            {
-                y[rowID] = tmp[cRow];
-            }
+            tmp[cRow] = y[rowID];
         }
 
-#ifdef USE_LIKWID
-        LIKWID_MARKER_STOP("SpMV_Sell-C-sigma");
-#endif
+        // loop over all row elements in chunk
+        for (int rowEntry=0; rowEntry<chunkLength[chunk]; ++rowEntry)
+        {
+            // (auto) vectorised loop over all rows in chunk
+            #pragma omp simd
+            for (int cRow=0; cRow<chunkSize; ++cRow)
+            {
+                tmp[cRow] += val      [chunkOffset + rowEntry*chunkSize + cRow]
+                            * x[ colInd[chunkOffset + rowEntry*chunkSize + cRow] ];
+            }
+        }
+        
+        // write back result
+        for (int cRow=0,           rowID=chunk*chunkSize;
+                    cRow<chunkSize;
+                ++cRow,           ++rowID
+            )
+        {
+            y[rowID] = tmp[cRow];
+        }
     }
 }
 
