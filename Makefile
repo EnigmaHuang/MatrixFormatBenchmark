@@ -1,43 +1,74 @@
+######## DEFINE COMPILER ######################################
 # Use the Intel c and C++ compiler
-CC       = icc -xhost
-CPP      = icpc -xhost
+#CC       = icc
+#CPP      = icpc
 
 # Use the GNU C and C++ compiler
-#CC       = gcc -march=native
-#CPP      = g++ -march=native
+#CC       = gcc
+#CPP      = g++
 
 # Use clang (LLVM) compiler
 #CC       = clang
 #CPP      = clang++
 
-CFLAGS   = -O3 -Wall -ansi -g -fopenmp -DVERBOSE -DUSE_LIKWID $(LIKWID_INC) -DLIKWID_PERFMON
-CPPFLAGS = $(CFLAGS) -std=c++11
-LDFLAGS  =  $(LIKWID_LIB) -llikwid -lm
-RM       = rm -f
+# PGI
+CC		   = pgcc
+CPP		   = pgc++
 
-BIN                 = test_omp benchmark_omp
-OFILES_testOMP      = mmio/mmio.o MMreader.o CSRMatrix.o timing/timing.o test.o
-OFILES_benchmarkOMP = mmio/mmio.o MMreader.o CSRMatrix.o timing/timing.o benchmark.o
+######## DEFINE COMPILER FLAGS ################################
+CFLAGS       = -O3
+LIKWIDFLAGS  = -DUSE_LIKWID $(LIKWID_INC) -DLIKWID_PERFMON
+VERBOSEFLAGS = -DVERBOSE
 
+ifeq "$(CC)" "gcc"
+	VERBOSEFLAGS += -g -Wall -ansi
+	ARCHFLAGS    += -march=native
+else ifeq "$(CC)" "icc"
+	VERBOSEFLAGS += -g -Wall -ansi
+	ARCHFLAGS    += -xhost
+else ifeq "$(CC)" "clang"
+	VERBOSEFLAGS += -g -Wall -ansi
+else ifeq "$(CC)" "pgcc"
+	#ARCHFLAGS    += -tp=sandybridge
+	VERBOSEFLAGS += -gopt -Minfo=all,ccff -Mneginfo
+endif
+
+CFLAGS    += $(ARCHFLAGS)
+CFLAGS    += $(VERBOSEFLAGS)
+
+omp: CFLAGS += -fopenmp $(LIKWIDFLAGS)
+acc: CFLAGS += -acc -ta=tesla
+#TODO managed, GPU genauer angeben
+
+CPPFLAGS   = $(CFLAGS) -std=c++11
+LDFLAGS    =  $(LIKWID_LIB) -llikwid -lm
+RM         = rm -f
+
+######## DEFINE DEPENDANCY AND RULES ##########################
+BIN              = benchmark
+OFILES_test      = mmio/mmio.o MMreader.o CSRMatrix.o timing/timing.o test.o
+OFILES_benchmark = mmio/mmio.o MMreader.o CSRMatrix.o timing/timing.o benchmark.o
 
 .PHONY: all clean
 
-all: $(BIN)
+all: omp
+
+omp: $(BIN)
+
+acc: $(BIN)
 
 clean:
-	$(RM) $(BIN) $(OFILES_testOMP) $(OFILES_benchmarkOMP)
+	$(RM) $(BIN) $(OFILES_test) $(OFILES_benchmark)
 
 
-##########BIN#################################################################
-test_omp:     $(OFILES_testOMP)
+########## BIN ################################################
+test:     $(OFILES_test)
 	$(CPP) $(CPPFLAGS) -o $@ $^ $(LDFLAGS)
 
-benchmark_omp:     $(OFILES_benchmarkOMP)
+benchmark:     $(OFILES_benchmark)
 	$(CPP) $(CPPFLAGS) -o $@ $^ $(LDFLAGS)
 
-
-
-##########C FILES############################################################
+########## C FILES ###########################################
 .c.o:
 	$(CC) $(CFLAGS) -c $<
 
@@ -46,12 +77,11 @@ mmio/mmio.o: mmio/mmio.c mmio/mmio.h
 timing/timing.o: timing/timing.c timing/timing.h
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-##########CPP FILES##########################################################
+########## CPP FILES #########################################
 .cpp.o:
 	$(CPP) $(CPPFLAGS) -c $<
 
-
-##########DEPENDENCIES#######################################################
+########## DEPENDENCIES ######################################
 test.o: test.cpp CSRMatrix.hpp SellCSigma.hpp MMreader.hpp spMV.hpp
 MMreader.o: MMreader.cpp MMreader.hpp mmio/mmio.h
 CSRMatrix.o: CSRMatrix.cpp CSRMatrix.hpp MMreader.hpp

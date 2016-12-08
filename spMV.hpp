@@ -24,12 +24,17 @@ void spMV( CSR_Matrix const & A,
            double *y
          )
 {
-    double const *val  = A.getValues();
-    int const *colInd  = A.getColInd();
-    int const *rowPtr  = A.getRowPtr();
-    int const numRows  = A.getRows();
+    double const *val     = A.getValues();
+    int const *colInd     = A.getColInd();
+    int const *rowPtr     = A.getRowPtr();
+    int const numRows     = A.getRows();
+    int const numNonZeros = A.getNonZeros();
+
+    #pragma acc data copyin(val[0:numNonZeros], colInd[0:numNonZeros])
+    #pragma acc data copyin(rowPtr[0:numRows+1], x[0:numRows])
 
 #pragma omp parallel
+#pragma acc parallel
     {
 #ifdef USE_LIKWID
     LIKWID_MARKER_START("SpMV_CSR");
@@ -37,6 +42,7 @@ void spMV( CSR_Matrix const & A,
 
         // loop over all rows
         #pragma omp for schedule(runtime)
+        #pragma acc loop
         for (int rowID=0; rowID<numRows; ++rowID)
         {
             double tmp = 0.;

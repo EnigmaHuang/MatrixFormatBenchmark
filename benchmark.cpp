@@ -1,5 +1,4 @@
 #include "MMreader.hpp"
-//#include "CSRMatrix.hpp"
 #include "SellCSigma.hpp"
 #include "spMV.hpp"
 
@@ -59,6 +58,7 @@ int main(int argc, char *argv[])
                 << "\n\tschedular: (" << schedName << ", " << chunkSize << ")"
                 << "\n\tmatrix size: " << mmMatrix.getRows() << "x" << mmMatrix.getCols()
                 << "\n\tnumber of nonzeros: " << mmMatrix.getNonZeros()
+                    << " (" << mmMatrix.getNonZeros()/mmMatrix.getRows() << " per Row)"
                 << std::endl;
 }
 #endif
@@ -84,14 +84,14 @@ int main(int argc, char *argv[])
     double *x = new double[length];
     double *y = new double[length];
 
-    std::cout << "Starting CSR" << std::endl;
-
     #pragma omp parallel for schedule(runtime)
     for (int i=0; i<length; ++i)
     {
         x[i] = 1.;
         y[i] = 0.;
     }
+
+    std::cout << "Starting CSR" << std::endl;
 
     timing(&timeing_start, &cpuTime);
 
@@ -112,7 +112,7 @@ int main(int argc, char *argv[])
     }
 
     /******SELL*******************************************************/
-    {
+    /*{
 
     int C = 4;
     if (argc > 2)
@@ -132,14 +132,14 @@ int main(int argc, char *argv[])
     double *x = new double[length];
     double *y = new double[length];
 
-    std::cout << "Starting Sell-" << C << "-" << sigma << std::endl;
-
     #pragma omp parallel for schedule(runtime)
     for (int i=0; i<length; ++i)
     {
         x[i] = 1.;
         y[i] = 0.;
     }
+
+    std::cout << "Starting Sell-" << C << "-" << sigma << std::endl;
 
     timing(&timeing_start, &cpuTime);
 
@@ -161,10 +161,11 @@ int main(int argc, char *argv[])
 
     delete[] x;
     delete[] y;
-    }
+    }*/
 
 #ifdef USE_LIKWID
     LIKWID_MARKER_CLOSE;
 #endif
+
     return 0;
 }
