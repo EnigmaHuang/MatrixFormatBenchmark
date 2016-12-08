@@ -30,7 +30,7 @@ else ifeq "$(CC)" "clang"
 	VERBOSEFLAGS += -g -Wall -ansi
 else ifeq "$(CC)" "pgcc"
 	#ARCHFLAGS    += -tp=sandybridge
-	VERBOSEFLAGS += -gopt -Minfo=all,ccff -Mneginfo
+	VERBOSEFLAGS += -gopt -Minfo=accel,loop,opt,unified,vect,lre,par
 endif
 
 CFLAGS    += $(ARCHFLAGS)
