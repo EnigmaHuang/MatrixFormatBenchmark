@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
 #endif
 
     /******CSR*******************************************************/
-    {
+    /*{
     CSR_Matrix csr_matrix(mmMatrix);
 
     double const *val     = csr_matrix.getValues();
@@ -101,7 +101,6 @@ int main(int argc, char *argv[])
     }
 
     // copy data to device (if necessary)
-
     #pragma acc data copyin (x[0:length],           \
                              val[0:numNonZeros],    \
                              colInd[0:numNonZeros], \
@@ -127,10 +126,10 @@ int main(int argc, char *argv[])
     delete[] x;
     delete[] y;
 
-    }
+    }*/
 
     /******SELL*******************************************************/
-    /*{
+    {
 
     int C = 4;
     if (argc > 2)
@@ -142,7 +141,16 @@ int main(int argc, char *argv[])
 
 
     SellCSigma_Matrix sell_matrix(mmMatrix, C, sigma);
-    int const length = sell_matrix.getPaddedRows();
+
+    double const * val       = sell_matrix.getValues();
+    int const * colInd       = sell_matrix.getColInd();
+    int const * chunkPtr     = sell_matrix.getChankPtr();
+    int const * chunkLength  = sell_matrix.getChankLength();
+    int const numberOfChunks = sell_matrix.getNumberOfChunks();
+    int const length         = sell_matrix.getPaddedRows();
+    int const capasety       = sell_matrix.getCapasety();
+    int const overhead       = sell_matrix.getOverhead();
+    int const nonZeros       = sell_matrix.getNonZeros();
 
     double timeing_start, timeing_end, runtime, cpuTime;
 
@@ -157,29 +165,37 @@ int main(int argc, char *argv[])
         y[i] = 0.;
     }
 
-    std::cout << "Starting Sell-" << C << "-" << sigma << std::endl;
+    // copy data to device (if necessary)
+    #pragma acc data copyin (x[0 : length],                     \
+                             val[0 : capasety],                 \
+                             colInd[0 : capasety],              \
+                             chunkPtr[0 : numberOfChunks],      \
+                             chunkLength[0 : numberOfChunks])   \
+                     copyout(y[0 : length])
+    {
 
-    timing(&timeing_start, &cpuTime);
+        std::cout << "Starting Sell-" << C << "-" << sigma << std::endl;
 
-    for (int i=0; i<revisions; ++i)
-        spMV( sell_matrix, x, y );
+        timing(&timeing_start, &cpuTime);
 
-    timing(&timeing_end, &cpuTime);
-    runtime = timeing_end - timeing_start;
+        for (int i=0; i<revisions; ++i)
+            spMV( sell_matrix, x, y );
 
-    int flops       = sell_matrix.getNonZeros()*2 ;
-    double overhead = static_cast<double>(sell_matrix.getOverhead()) /
-                         (sell_matrix.getNonZeros()+sell_matrix.getOverhead());
+        timing(&timeing_end, &cpuTime);
+        runtime = timeing_end - timeing_start;
 
+        int flops       = nonZeros * 2;
 
-    std::cout << "runtime Sell-" << C << "-" << sigma << ": " << runtime << " sec."
-              << " performance: " << static_cast<double>(flops)*revisions / runtime
-              << " overhead: " << overhead*100 << "%"
-              << std::endl;
+        std::cout << "runtime Sell-" << C << "-" << sigma << ": " << runtime << " sec."
+                  << " performance: " << static_cast<double>(flops)*revisions / runtime
+                  << " overhead: "
+                  << static_cast<double>(overhead)/(nonZeros+overhead)*100 << "%"
+                  << std::endl;
+    } // copy data back from device
 
     delete[] x;
     delete[] y;
-    }*/
+    }
 
 #ifdef USE_LIKWID
     LIKWID_MARKER_CLOSE;

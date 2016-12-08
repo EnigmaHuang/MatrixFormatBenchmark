@@ -91,25 +91,42 @@ void spMV( SellCSigma_Matrix const & A,
     int const * colInd       = A.getColInd();
     int const numberOfChunks = A.getNumberOfChunks();
     int const chunkSize      = C;
+    int const paddedRows     = A.getPaddedRows();
+    int const capasety       = A.getCapasety();
 
-#pragma omp parallel
+    double tmp[C]{};
+    double const zeros[C]{};
+    
+#pragma opm parallel private(tmp)
+#pragma acc parallel present(val[0 : capasety],                     \
+                             colInd[0 : capasety],                  \
+                             chunkPtr[0 : numberOfChunks],          \
+                             chunkLength[0 : numberOfChunks],       \
+                             x[0 : paddedRows],                     \
+                             y[0 : paddedRows])                     \
+                     copyin(zeros) create(tmp) private(tmp)         \
+                     vector_length(32)
     {
 #ifdef USE_LIKWID
     LIKWID_MARKER_START("SpMV_Sell-C-sigma");
 #endif
 
         #pragma omp for schedule(runtime)
+        #pragma acc loop
         // loop over all chunks
         for (int chunk=0; chunk < numberOfChunks; ++chunk)
         {
             int chunkOffset = chunkPtr[chunk];
-            double tmp[chunkSize] {};
+
+            for (int i=0; i<chunkSize; ++i)
+                tmp[i] = zeros[i];
 
             // loop over all row elements in chunk
             for (int rowEntry=0; rowEntry<chunkLength[chunk]; ++rowEntry)
             {
                 // (auto) vectorised loop over all rows in chunk
                 #pragma omp simd
+                #pragma acc loop vector
                 for (int cRow=0; cRow<chunkSize; ++cRow)
                 {
                     tmp[cRow] += val      [chunkOffset + rowEntry*chunkSize + cRow]
@@ -118,6 +135,7 @@ void spMV( SellCSigma_Matrix const & A,
             }
             
             // write back result of y = alpha Ax + beta y
+            #pragma acc loop vector
             for (int cRow=0,           rowID=chunk*chunkSize;
                     cRow<chunkSize;
                 ++cRow,           ++rowID
