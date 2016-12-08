@@ -18,6 +18,7 @@ extern "C"
  * y=A*x
  * using the CSR Format
  * y and x musst be allocated and valid
+ * if accelorators are used (openACC) data have to be preent on the device
  */
 void spMV( CSR_Matrix const & A,
            double const *x,
@@ -30,11 +31,14 @@ void spMV( CSR_Matrix const & A,
     int const numRows     = A.getRows();
     int const numNonZeros = A.getNonZeros();
 
-    #pragma acc data copyin(val[0:numNonZeros], colInd[0:numNonZeros])
-    #pragma acc data copyin(rowPtr[0:numRows+1], x[0:numRows])
+    #pragma acc data present(val[0:numNonZeros],        \
+                             colInd[0:numNonZeros],     \
+                             rowPtr[0:numRows+1],       \
+                             x[0:numRows],              \
+                             y[0:numRows])
 
-#pragma omp parallel
-#pragma acc parallel
+    #pragma omp parallel
+    #pragma acc parallel
     {
 #ifdef USE_LIKWID
     LIKWID_MARKER_START("SpMV_CSR");

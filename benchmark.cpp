@@ -52,13 +52,16 @@ int main(int argc, char *argv[])
         case omp_sched_auto: schedName = "auto"; break;
     }
 
+    //TODO open ACC infos
+
     std::cout   << "Matrix Format Benchmark:"
                 << "\n\trevisions: " << revisions
                 << "\n\tnumber of threads: " << omp_get_num_threads()
                 << "\n\tschedular: (" << schedName << ", " << chunkSize << ")"
                 << "\n\tmatrix size: " << mmMatrix.getRows() << "x" << mmMatrix.getCols()
-                << "\n\tnumber of nonzeros: " << mmMatrix.getNonZeros()
-                    << " (" << mmMatrix.getNonZeros()/mmMatrix.getRows() << " per Row)"
+                << "\n\tnumber of nonzeros: " << mmMatrix.getNonZeros() << " ("
+                    << static_cast<double>(mmMatrix.getNonZeros())/mmMatrix.getRows()
+                    << " per Row)"
                 << std::endl;
 }
 #endif
@@ -76,7 +79,13 @@ int main(int argc, char *argv[])
     /******CSR*******************************************************/
     {
     CSR_Matrix csr_matrix(mmMatrix);
+
+    double const *val     = csr_matrix.getValues();
+    int const *colInd     = csr_matrix.getColInd();
+    int const *rowPtr     = csr_matrix.getRowPtr();
+    int const numRows     = csr_matrix.getRows();
     int const length = csr_matrix.getRows();
+    int const numNonZeros = csr_matrix.getNonZeros();
 
     double timeing_start, timeing_end, runtime, cpuTime;
 
@@ -91,20 +100,29 @@ int main(int argc, char *argv[])
         y[i] = 0.;
     }
 
-    std::cout << "Starting CSR" << std::endl;
+    // copy data to device (if necessary)
 
-    timing(&timeing_start, &cpuTime);
+    #pragma acc data copyin (x[0:length],           \
+                             val[0:numNonZeros],    \
+                             colInd[0:numNonZeros], \
+                             rowPtr[0:numRows+1])   \
+                     copyout(y[0:length])
+    {
+        std::cout << "Starting CSR" << std::endl;
 
-    for (int i=0; i<revisions; ++i)
-        spMV( csr_matrix, x, y );
+        timing(&timeing_start, &cpuTime);
 
-    timing(&timeing_end, &cpuTime);
-    runtime = timeing_end - timeing_start;
+        for (int i=0; i<revisions; ++i)
+            spMV( csr_matrix, x, y );
 
-    int flops = csr_matrix.getNonZeros()*2;
-    std::cout << "runtime CSR: " << runtime << " sec."
-              << " performance: " << static_cast<double>(flops)*revisions / runtime
-              << std::endl;
+        timing(&timeing_end, &cpuTime);
+        runtime = timeing_end - timeing_start;
+
+        double flops = numNonZeros * 2;
+        std::cout << "runtime CSR: " << runtime << " sec."
+                << " performance: " << flops * revisions / runtime
+                << std::endl;
+    } // copy data back form device
 
     delete[] x;
     delete[] y;
