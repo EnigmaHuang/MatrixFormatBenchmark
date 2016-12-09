@@ -7,6 +7,7 @@
 #include <cassert>
 #include <cstdlib>
 #include <string>
+#include <utility>
 
 extern "C"
 {
@@ -77,7 +78,7 @@ int main(int argc, char *argv[])
 #endif
 
     /******CSR*******************************************************/
-    /*{
+    {
     CSR_Matrix csr_matrix(mmMatrix);
 
     double const *val     = csr_matrix.getValues();
@@ -110,9 +111,26 @@ int main(int argc, char *argv[])
         std::cout << "Starting CSR" << std::endl;
 
         timing(&timeing_start, &cpuTime);
+#ifdef USE_LIKWID
+#pragma omp parallel
+{
+    LIKWID_MARKER_START("SpMV_CSR");
+}
+#endif
 
         for (int i=0; i<revisions; ++i)
+        {
             spMV( csr_matrix, x, y );
+            // swap pointer
+            std::swap(x,y);
+        }
+
+#ifdef USE_LIKWID
+#pragma omp parallel
+{
+    LIKWID_MARKER_STOP("SpMV_CSR");
+}
+#endif
 
         timing(&timeing_end, &cpuTime);
         runtime = timeing_end - timeing_start;
@@ -126,7 +144,7 @@ int main(int argc, char *argv[])
     delete[] x;
     delete[] y;
 
-    }*/
+    }
 
     /******SELL*******************************************************/
     {
@@ -159,6 +177,7 @@ int main(int argc, char *argv[])
     double *y = new double[length];
 
     #pragma omp parallel for schedule(runtime)
+    //TODO like in kernel (junks!!)
     for (int i=0; i<length; ++i)
     {
         x[i] = 1.;
@@ -178,8 +197,26 @@ int main(int argc, char *argv[])
 
         timing(&timeing_start, &cpuTime);
 
+#ifdef USE_LIKWID
+#pragma omp parallel
+{
+        LIKWID_MARKER_START("SpMV_SELL-C-SIGMA");
+}
+#endif
+
         for (int i=0; i<revisions; ++i)
+        {
             spMV( sell_matrix, x, y );
+            // swap pointer
+            std::swap(x,y);
+        }
+
+#ifdef USE_LIKWID
+#pragma omp parallel
+{
+        LIKWID_MARKER_STOP("SpMV_SELL-C-SIGMA");
+}
+#endif
 
         timing(&timeing_end, &cpuTime);
         runtime = timeing_end - timeing_start;
@@ -188,7 +225,7 @@ int main(int argc, char *argv[])
 
         std::cout << "runtime Sell-" << C << "-" << sigma << ": " << runtime << " sec."
                   << " performance: " << static_cast<double>(flops)*revisions / runtime
-                  << " overhead: "
+                  << " flop/s overhead: "
                   << static_cast<double>(overhead)/(nonZeros+overhead)*100 << "%"
                   << std::endl;
     } // copy data back from device

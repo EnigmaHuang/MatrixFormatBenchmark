@@ -25,14 +25,15 @@ int main(int argc, char *argv[])
     
     for (int i=0; i<identity_csr.getRows(); ++i)
     {
-        x.push_back(i+1);
-        y.push_back(42);
+        x.push_back(1.);
+        y.push_back(42.);
     }
 
      spMV( identity_csr, x.data(), y.data() );
 
-    assert (x == y);
-    //std::cout << x;
+    //assert (x == y);
+    //std::cout << y;
+    assert (y == 43. );
 
     std::cout << "Identity_CSR: sucses!" << std::endl;
 
@@ -45,8 +46,8 @@ int main(int argc, char *argv[])
     
     for (int i=0; i<identity_sell_1_1.getPaddedRows(); ++i)
     {
-        m.push_back(i+1);
-        n.push_back(42);
+        m.push_back(1.);
+        n.push_back(42.);
     }
 
     spMV( identity_sell_1_1, m.data(), n.data() );
@@ -55,7 +56,8 @@ int main(int argc, char *argv[])
     //std::cout << n;
     m.resize(identity_sell_1_1.getRows());
     n.resize(identity_sell_1_1.getRows());
-    assert (m == n);
+    //assert (m == n);
+    assert (n == 43.);
 
     std::cout << "Identity_sell-2-5: sucses!" << std::endl;
     }
@@ -70,8 +72,8 @@ int main(int argc, char *argv[])
     
     for (int i=0; i<band_csr.getRows(); ++i)
     {
-        x.push_back(1);
-        y.push_back(42);
+        x.push_back(1.);
+        y.push_back(0.);
     }
 
     spMV( band_csr, x.data(), y.data() );
@@ -91,8 +93,8 @@ int main(int argc, char *argv[])
     
     for (int i=0; i<band_sell.getPaddedRows(); ++i)
     {
-        m.push_back(1);
-        n.push_back(42);
+        m.push_back(1.);
+        n.push_back(0.);
     }
 
     spMV( band_sell, m.data(), n.data() );
@@ -117,8 +119,8 @@ int main(int argc, char *argv[])
     
     for (int i=0; i<band_sym_csr.getRows(); ++i)
     {
-        x.push_back(1);
-        y.push_back(42);
+        x.push_back(1.);
+        y.push_back(0.);
     }
 
     spMV( band_sym_csr, x.data(), y.data() );
@@ -141,8 +143,8 @@ int main(int argc, char *argv[])
     
     for (int i=0; i<brockenBand_csr.getRows(); ++i)
     {
-        x.push_back(1);
-        y.push_back(42);
+        x.push_back(1.);
+        y.push_back(0.);
     }
 
     spMV( brockenBand_csr, x.data(), y.data() );
@@ -166,8 +168,8 @@ int main(int argc, char *argv[])
     
     for (int i=0; i<brockenBand_sell.getPaddedRows(); ++i)
     {
-        m.push_back(1);
-        n.push_back(42);
+        m.push_back(1.);
+        n.push_back(0.);
     }
 
     spMV( brockenBand_sell, m.data(), n.data() );
@@ -188,9 +190,10 @@ int main(int argc, char *argv[])
     }
 
 /****Randome matrix test***********************************************/
-    std::cout << "********Randome Matrix Test*****************************" << std::endl;
     if(argc == 2)
     {
+        std::cout << "********Randome Matrix Test*****************************" << std::endl;
+
         MMreader mmMatrix (argv[1]);
         CSR_Matrix csrMatrix(mmMatrix);
         SellCSigma_Matrix sellMatrix(mmMatrix,4, 128);
@@ -199,9 +202,9 @@ int main(int argc, char *argv[])
     
         for (int i=0; i<sellMatrix.getPaddedRows(); ++i)
         {
-            x.push_back(1);
-            yCSR.push_back(42);
-            ySell.push_back(42);
+            x.push_back(1.);
+            yCSR.push_back(0.);
+            ySell.push_back(0.);
         }
 
         spMV (csrMatrix, x.data(), yCSR.data());

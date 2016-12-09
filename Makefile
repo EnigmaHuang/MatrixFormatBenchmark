@@ -17,8 +17,15 @@ CPP		   = pgc++
 
 ######## DEFINE COMPILER FLAGS ################################
 CFLAGS       = -O3
-LIKWIDFLAGS  = -DUSE_LIKWID $(LIKWID_INC) -DLIKWID_PERFMON
+
 VERBOSEFLAGS = -DVERBOSE
+
+# If you want to use likwid uncommend the following two lines
+# and point with LIKDWID_LIB and LIKWID_INC to your likwid instalation
+# example: export LIKWID_INC="-I/mnt/opt/likwid-4.0.0_2.11/include"
+# on the rrze cluster this variables are already set
+LIKWIDFLAGS  = -DUSE_LIKWID $(LIKWID_INC) -DLIKWID_PERFMON
+LIKWIDi_LD_FLAGS = $(LIKWID_LIB) -llikwid -lm
 
 ifeq "$(CC)" "gcc"
 	VERBOSEFLAGS += -g -Wall -ansi
@@ -41,13 +48,15 @@ acc: CFLAGS += -acc -ta=tesla
 #TODO managed, GPU genauer angeben
 
 CPPFLAGS   = $(CFLAGS) -std=c++11
-LDFLAGS    =  $(LIKWID_LIB) -llikwid -lm
+LDFLAGS  = $(LIKWIDi_LD_FLAGS)
 RM         = rm -f
 
 ######## DEFINE DEPENDANCY AND RULES ##########################
 BIN              = benchmark
 OFILES_test      = mmio/mmio.o MMreader.o CSRMatrix.o timing/timing.o test.o
 OFILES_benchmark = mmio/mmio.o MMreader.o CSRMatrix.o timing/timing.o benchmark.o
+
+
 
 .PHONY: all clean
 

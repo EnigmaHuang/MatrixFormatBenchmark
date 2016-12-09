@@ -15,7 +15,7 @@ extern "C"
 /*****CSR_MATRIX**************************************************************/
 /**
  * sparse Matrix-Vector multiplication
- * y=A*x
+ * y= y + A*x
  * using the CSR Format
  * y and x musst be allocated and valid
  * if accelorators are used (openACC) data have to be preent on the device
@@ -31,37 +31,25 @@ void spMV( CSR_Matrix const & A,
     int const numRows     = A.getRows();
     int const numNonZeros = A.getNonZeros();
 
-    #pragma acc data present(val[0:numNonZeros],        \
-                             colInd[0:numNonZeros],     \
-                             rowPtr[0:numRows+1],       \
-                             x[0:numRows],              \
-                             y[0:numRows])
-
-    #pragma omp parallel
-    #pragma acc parallel
+    // loop over all rows
+#pragma omp parallel for schedule(runtime)
+#pragma acc parallel present(val[0:numNonZeros],            \
+                                colInd[0:numNonZeros],      \
+                                rowPtr[0:numRows+1],        \
+                                x[0:numRows],               \
+                                y[0:numRows])               \
+                     loop
+    for (int rowID=0; rowID<numRows; ++rowID)
     {
-#ifdef USE_LIKWID
-    LIKWID_MARKER_START("SpMV_CSR");
-#endif
+        double tmp = y[rowID];
 
-        // loop over all rows
-        #pragma omp for schedule(runtime)
-        #pragma acc loop
-        for (int rowID=0; rowID<numRows; ++rowID)
+        // loop over all elements in row
+        for (int rowEntry=rowPtr[rowID]; rowEntry<rowPtr[rowID+1]; ++rowEntry)
         {
-            double tmp = 0.;
-
-            // loop over all elements in row
-            for (int rowEntry=rowPtr[rowID]; rowEntry<rowPtr[rowID+1]; ++rowEntry)
-            {
-                tmp += val[rowEntry] * x[ colInd[rowEntry] ];
-            }
-
-            y[rowID] = tmp;
+            tmp += val[rowEntry] * x[ colInd[rowEntry] ];
         }
-#ifdef USE_LIKWID
-    LIKWID_MARKER_STOP("SpMV_CSR");
-#endif
+
+        y[rowID] = tmp;
     }
 }
 
@@ -71,7 +59,7 @@ void spMV( CSR_Matrix const & A,
 
 /**
  * sparse Matrix-Vector multiplication
- * y=A*x
+ * y= y + A*x
  * using the Sell-C-Sigma Format
  * y and x musst be allocated and valid
  *
@@ -94,60 +82,55 @@ void spMV( SellCSigma_Matrix const & A,
     int const paddedRows     = A.getPaddedRows();
     int const capasety       = A.getCapasety();
 
-    double tmp[C]{};
-    double const zeros[C]{};
-    
-#pragma opm parallel private(tmp)
+    double tmp[chunkSize];
+
+#pragma opm parallel private(tmp) for schedule(runtime)
 #pragma acc parallel present(val[0 : capasety],                     \
                              colInd[0 : capasety],                  \
                              chunkPtr[0 : numberOfChunks],          \
                              chunkLength[0 : numberOfChunks],       \
                              x[0 : paddedRows],                     \
                              y[0 : paddedRows])                     \
-                     copyin(zeros) create(tmp) private(tmp)         \
-                     vector_length(32)
+                     create(tmp) private(tmp)                       \
+                     vector_length(32)                              \
+            loop
+    // loop over all chunks
+    for (int chunk=0; chunk < numberOfChunks; ++chunk)
     {
-#ifdef USE_LIKWID
-    LIKWID_MARKER_START("SpMV_Sell-C-sigma");
-#endif
+        int chunkOffset = chunkPtr[chunk];
 
-        #pragma omp for schedule(runtime)
-        #pragma acc loop
-        // loop over all chunks
-        for (int chunk=0; chunk < numberOfChunks; ++chunk)
+        // fill tempory vector with values from y
+        for (int cRow=0        ,   rowID=chunk*chunkSize;
+                 cRow<chunkSize;
+               ++cRow          , ++rowID
+            )
         {
-            int chunkOffset = chunkPtr[chunk];
+            tmp[cRow] = y[rowID];
+        }
 
-            for (int i=0; i<chunkSize; ++i)
-                tmp[i] = zeros[i];
-
-            // loop over all row elements in chunk
-            for (int rowEntry=0; rowEntry<chunkLength[chunk]; ++rowEntry)
-            {
-                // (auto) vectorised loop over all rows in chunk
-                #pragma omp simd
-                #pragma acc loop vector
-                for (int cRow=0; cRow<chunkSize; ++cRow)
-                {
-                    tmp[cRow] += val      [chunkOffset + rowEntry*chunkSize + cRow]
-                               * x[ colInd[chunkOffset + rowEntry*chunkSize + cRow] ];
-                }
-            }
-            
-            // write back result of y = alpha Ax + beta y
+        // loop over all row elements in chunk
+        for (int rowEntry=0; rowEntry<chunkLength[chunk]; ++rowEntry)
+        {
+            // (auto) vectorised loop over all rows in chunk
+            #pragma omp simd
             #pragma acc loop vector
-            for (int cRow=0,           rowID=chunk*chunkSize;
-                    cRow<chunkSize;
-                ++cRow,           ++rowID
-                )
+            for (int cRow=0; cRow<chunkSize; ++cRow)
             {
-                y[rowID] = tmp[cRow];
+                tmp[cRow] += val      [chunkOffset + rowEntry*chunkSize + cRow]
+                           * x[ colInd[chunkOffset + rowEntry*chunkSize + cRow] ];
             }
         }
 
-#ifdef USE_LIKWID
-        LIKWID_MARKER_STOP("SpMV_Sell-C-sigma");
-#endif
+        // write back result of y = alpha Ax + beta y
+        #pragma acc loop vector
+        //TODO brauch ich hier das vector und warum nihct oben?
+        for (int cRow=0        , rowID=chunk*chunkSize;
+                 cRow<chunkSize;
+               ++cRow          , ++rowID
+            )
+        {
+            y[rowID] = tmp[cRow];
+        }
     }
 }
 
