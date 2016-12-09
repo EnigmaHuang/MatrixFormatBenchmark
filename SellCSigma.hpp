@@ -28,6 +28,7 @@ public:
     int getNonZeros()            const { return nz_; }
     int getNumberOfChunks()      const { return numberOfChunks_; }
     int getOverhead()            const { return overhead_; }
+    int getCapasety()            const { return capasety_; }
     int const * getColInd()      const { return colInd_; }
     int const * getChankPtr()    const { return chunkPtr_; }
     int const * getChankLength() const { return chunkLength_; }
@@ -42,7 +43,7 @@ public:
 
 private:
     int const C_, sigma_;
-    int M_, N_, nz_, numberOfChunks_, overhead_;
+    int M_, N_, nz_, numberOfChunks_, overhead_, capasety_;
     int *colInd_, *chunkPtr_, *chunkLength_;
     int *permute_;      // Sell-C-sigma row ID -> orginal row ID
     int *antiPermute_;  // orginal row ID -> Sell row ID
@@ -116,16 +117,16 @@ SellCSigma_Matrix::SellCSigma_Matrix( MMreader mmMatrix, int C, int const sigma 
 
 
     // calculate memory usage and allocate memmory for values and colum IDs
-    size_t valueMemoryUsage = std::accumulate(std::begin(valuesPerChunk),
-                                              std::end(valuesPerChunk),
-                                              0
-                                             );
+    capasety_ = std::accumulate(std::begin(valuesPerChunk),
+                                std::end(valuesPerChunk),
+                                0
+                               );
 
-    val_    = new double[valueMemoryUsage];
-    colInd_ = new int   [valueMemoryUsage];
+    val_    = new double[capasety_];
+    colInd_ = new int   [capasety_];
 
     // calulate memory overhead
-    overhead_ = valueMemoryUsage - getNonZeros();
+    overhead_ = capasety_ - getNonZeros();
 
 
     // creat Sell-C-sigma data

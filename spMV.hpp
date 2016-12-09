@@ -18,19 +18,27 @@ extern "C"
  * y= y + A*x
  * using the CSR Format
  * y and x musst be allocated and valid
+ * if accelorators are used (openACC) data have to be preent on the device
  */
 void spMV( CSR_Matrix const & A,
            double const *x,
            double *y
          )
 {
-    double const *val  = A.getValues();
-    int const *colInd  = A.getColInd();
-    int const *rowPtr  = A.getRowPtr();
-    int const numRows  = A.getRows();
+    double const *val     = A.getValues();
+    int const *colInd     = A.getColInd();
+    int const *rowPtr     = A.getRowPtr();
+    int const numRows     = A.getRows();
+    int const numNonZeros = A.getNonZeros();
 
     // loop over all rows
 #pragma omp parallel for schedule(runtime)
+#pragma acc parallel present(val[0:numNonZeros],            \
+                                colInd[0:numNonZeros],      \
+                                rowPtr[0:numRows+1],        \
+                                x[0:numRows],               \
+                                y[0:numRows])               \
+                     loop
     for (int rowID=0; rowID<numRows; ++rowID)
     {
         double tmp = y[rowID];
@@ -71,18 +79,30 @@ void spMV( SellCSigma_Matrix const & A,
     int const * colInd       = A.getColInd();
     int const numberOfChunks = A.getNumberOfChunks();
     int const chunkSize      = C;
+    int const paddedRows     = A.getPaddedRows();
+    int const capasety       = A.getCapasety();
 
-#pragma omp parallel for schedule(runtime)
+    double tmp[chunkSize];
+
+#pragma opm parallel private(tmp) for schedule(runtime)
+#pragma acc parallel present(val[0 : capasety],                     \
+                             colInd[0 : capasety],                  \
+                             chunkPtr[0 : numberOfChunks],          \
+                             chunkLength[0 : numberOfChunks],       \
+                             x[0 : paddedRows],                     \
+                             y[0 : paddedRows])                     \
+                     create(tmp) private(tmp)                       \
+                     vector_length(32)                              \
+            loop
     // loop over all chunks
     for (int chunk=0; chunk < numberOfChunks; ++chunk)
     {
         int chunkOffset = chunkPtr[chunk];
 
-        // create tempory vector with vaues from y (y = y + Ax)
-        double tmp[chunkSize];
-        for (int cRow=0,           rowID=chunk*chunkSize;
-                    cRow<chunkSize;
-                ++cRow,           ++rowID
+        // fill tempory vector with values from y
+        for (int cRow=0        ,   rowID=chunk*chunkSize;
+                 cRow<chunkSize;
+               ++cRow          , ++rowID
             )
         {
             tmp[cRow] = y[rowID];
@@ -93,17 +113,20 @@ void spMV( SellCSigma_Matrix const & A,
         {
             // (auto) vectorised loop over all rows in chunk
             #pragma omp simd
+            #pragma acc loop vector
             for (int cRow=0; cRow<chunkSize; ++cRow)
             {
                 tmp[cRow] += val      [chunkOffset + rowEntry*chunkSize + cRow]
-                            * x[ colInd[chunkOffset + rowEntry*chunkSize + cRow] ];
+                           * x[ colInd[chunkOffset + rowEntry*chunkSize + cRow] ];
             }
         }
-        
-        // write back result
-        for (int cRow=0,           rowID=chunk*chunkSize;
-                    cRow<chunkSize;
-                ++cRow,           ++rowID
+
+        // write back result of y = alpha Ax + beta y
+        #pragma acc loop vector
+        //TODO brauch ich hier das vector und warum nihct oben?
+        for (int cRow=0        , rowID=chunk*chunkSize;
+                 cRow<chunkSize;
+               ++cRow          , ++rowID
             )
         {
             y[rowID] = tmp[cRow];
