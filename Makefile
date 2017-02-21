@@ -24,7 +24,7 @@ VERBOSEFLAGS = -DVERBOSE
 # the evvirement variables LIKWID_LIB and LIKWID_INC has to be set
 # on the rrze cluster this variables are already set
 LIKWIDFLAGS  = -DUSE_LIKWID $(LIKWID_INC) -DLIKWID_PERFMON
-LIKWIDLD_FLAGS = $(LIKWID_LIB) --llikwid -lm
+LIKWIDLD_FLAGS = $(LIKWID_LIB) -llikwid -lm
 
 ifeq "$(CC)" "gcc"
 	VERBOSEFLAGS += -g -Wall -ansi
