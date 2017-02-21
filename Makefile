@@ -17,15 +17,14 @@ CPP		   = pgc++
 
 ######## DEFINE COMPILER FLAGS ################################
 CFLAGS       = -O3
-
 VERBOSEFLAGS = -DVERBOSE
 
-# If you want to use likwid uncommend the following two lines
-# and point with LIKDWID_LIB and LIKWID_INC to your likwid instalation
-# example: export LIKWID_INC="-I/mnt/opt/likwid-4.0.0_2.11/include"
+# If you want to make use of the likwid profiler
+# uncommend the following two lines
+# the evvirement variables LIKWID_LIB and LIKWID_INC has to be set
 # on the rrze cluster this variables are already set
 LIKWIDFLAGS  = -DUSE_LIKWID $(LIKWID_INC) -DLIKWID_PERFMON
-LIKWIDi_LD_FLAGS = $(LIKWID_LIB) -llikwid -lm
+LIKWIDLD_FLAGS = $(LIKWID_LIB) --llikwid -lm
 
 ifeq "$(CC)" "gcc"
 	VERBOSEFLAGS += -g -Wall -ansi
@@ -36,7 +35,7 @@ else ifeq "$(CC)" "icc"
 else ifeq "$(CC)" "clang"
 	VERBOSEFLAGS += -g -Wall -ansi
 else ifeq "$(CC)" "pgcc"
-	#ARCHFLAGS    += -tp=sandybridge
+#	ARCHFLAGS    += -tp=sandybridge
 	VERBOSEFLAGS += -gopt -Minfo=accel,loop,opt,unified,vect,lre,par
 endif
 
@@ -48,15 +47,13 @@ acc: CFLAGS += -acc -ta=tesla
 #TODO managed, GPU genauer angeben
 
 CPPFLAGS   = $(CFLAGS) -std=c++11
-LDFLAGS  = $(LIKWIDi_LD_FLAGS)
+LDFLAGS    = $(LIKWIDLD_FLAGS)
 RM         = rm -f
 
 ######## DEFINE DEPENDANCY AND RULES ##########################
 BIN              = benchmark
 OFILES_test      = mmio/mmio.o MMreader.o CSRMatrix.o timing/timing.o test.o
 OFILES_benchmark = mmio/mmio.o MMreader.o CSRMatrix.o timing/timing.o benchmark.o
-
-
 
 .PHONY: all clean
 
