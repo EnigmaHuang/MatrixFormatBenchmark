@@ -93,17 +93,14 @@ void spMV( SellCSigma_Matrix const & A,
                              y[0 : paddedRows])                     \
                      create(tmp) private(tmp)                       \
                      vector_length(C)                               \
-                     num_workers(4)                                 \
-            loop gang worker
-    //TODO num_workers anpassen
+            loop
     // loop over all chunks
-    //// OPENACC loop gang worker(4) /* blockIDx.x */
     for (int chunk=0; chunk < numberOfChunks; ++chunk)
     {
         int chunkOffset = chunkPtr[chunk];
 
         // fill tempory vector with values from y
-        #pragma acc loop vector
+        // #pragma acc loop vector
         for (int cRow=0        ,   rowID=chunk*chunkSize;
                  cRow<chunkSize;
                ++cRow          , ++rowID
@@ -113,7 +110,6 @@ void spMV( SellCSigma_Matrix const & A,
         }
 
         // loop over all row elements in chunk
-        ////OPENACC loop seq
         for (int rowEntry=0; rowEntry<chunkLength[chunk]; ++rowEntry)
         {
             //  vectorised loop over all rows in chunk
