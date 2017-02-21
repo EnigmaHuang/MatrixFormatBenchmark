@@ -100,7 +100,7 @@ void spMV( SellCSigma_Matrix const & A,
         int chunkOffset = chunkPtr[chunk];
 
         // fill tempory vector with values from y
-        // #pragma acc loop vector
+        #pragma acc loop vector
         for (int cRow=0        ,   rowID=chunk*chunkSize;
                  cRow<chunkSize;
                ++cRow          , ++rowID
