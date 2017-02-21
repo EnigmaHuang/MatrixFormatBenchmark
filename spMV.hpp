@@ -92,14 +92,18 @@ void spMV( SellCSigma_Matrix const & A,
                              x[0 : paddedRows],                     \
                              y[0 : paddedRows])                     \
                      create(tmp) private(tmp)                       \
-                     vector_length(32)                              \
-            loop
+                     vector_length(C)                               \
+                     num_workers(4)                                 \
+            loop gang worker
+    //TODO num_workers anpassen
     // loop over all chunks
+    //// OPENACC loop gang worker(4) /* blockIDx.x */
     for (int chunk=0; chunk < numberOfChunks; ++chunk)
     {
         int chunkOffset = chunkPtr[chunk];
 
         // fill tempory vector with values from y
+        #pragma acc loop vector
         for (int cRow=0        ,   rowID=chunk*chunkSize;
                  cRow<chunkSize;
                ++cRow          , ++rowID
@@ -109,9 +113,10 @@ void spMV( SellCSigma_Matrix const & A,
         }
 
         // loop over all row elements in chunk
+        ////OPENACC loop seq
         for (int rowEntry=0; rowEntry<chunkLength[chunk]; ++rowEntry)
         {
-            // (auto) vectorised loop over all rows in chunk
+            //  vectorised loop over all rows in chunk
             #pragma omp simd
             #pragma acc loop vector
             for (int cRow=0; cRow<chunkSize; ++cRow)
@@ -123,7 +128,6 @@ void spMV( SellCSigma_Matrix const & A,
 
         // write back result of y = alpha Ax + beta y
         #pragma acc loop vector
-        //TODO brauch ich hier das vector und warum nihct oben?
         for (int cRow=0        , rowID=chunk*chunkSize;
                  cRow<chunkSize;
                ++cRow          , ++rowID
