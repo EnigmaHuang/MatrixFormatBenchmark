@@ -40,7 +40,7 @@ else ifeq "$(CC)" "pgcc"
 endif
 
 CFLAGS    += $(ARCHFLAGS)
-CFLAGS    += $(VERBOSEFLAGS)
+#CFLAGS    += $(VERBOSEFLAGS)
 
 omp: CFLAGS += -fopenmp $(LIKWIDFLAGS)
 acc: CFLAGS += -acc -ta=tesla
