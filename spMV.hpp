@@ -82,7 +82,7 @@ void spMV( SellCSigma_Matrix const & A,
     int const paddedRows     = A.getPaddedRows();
     int const capasety       = A.getCapasety();
 
-    // double tmp[chunkSize];
+    double tmp[chunkSize];
 
 #pragma opm parallel private(tmp) for schedule(runtime)
 #pragma acc parallel present(val[0 : capasety],                     \
@@ -91,6 +91,7 @@ void spMV( SellCSigma_Matrix const & A,
                              chunkLength[0 : numberOfChunks],       \
                              x[0 : paddedRows],                     \
                              y[0 : paddedRows])                     \
+                     create(tmp) private(tmp)                       \
                      vector_length(C)                               \
             loop
     // loop over all chunks
@@ -98,25 +99,37 @@ void spMV( SellCSigma_Matrix const & A,
     {
         int chunkOffset = chunkPtr[chunk];
 
+        // fill tempory vector with values from y
         #pragma acc loop vector
-        #pragma omp simd
         for (int cRow=0        ,   rowID=chunk*chunkSize;
                  cRow<chunkSize;
                ++cRow          , ++rowID
             )
         {
-            // fill tempory vector with values from y
-            double tmp = y[rowID];
+            tmp[cRow] = y[rowID];
+        }
 
-            // loop over all row elements in chunk
-            for (int rowEntry=0; rowEntry<chunkLength[chunk]; ++rowEntry)
+        // loop over all row elements in chunk
+        for (int rowEntry=0; rowEntry<chunkLength[chunk]; ++rowEntry)
+        {
+            //  vectorised loop over all rows in chunk
+            #pragma omp simd
+            #pragma acc loop vector
+            for (int cRow=0; cRow<chunkSize; ++cRow)
             {
-                tmp += val      [chunkOffset + rowEntry*chunkSize + cRow]
+                tmp[cRow] += val      [chunkOffset + rowEntry*chunkSize + cRow]
                            * x[ colInd[chunkOffset + rowEntry*chunkSize + cRow] ];
             }
+        }
 
-            // write back result of y = alpha Ax + beta y
-            y[rowID] = tmp;
+        // write back result of y = alpha Ax + beta y
+        #pragma acc loop vector
+        for (int cRow=0        , rowID=chunk*chunkSize;
+                 cRow<chunkSize;
+               ++cRow          , ++rowID
+            )
+        {
+            y[rowID] = tmp[cRow];
         }
     }
 }
@@ -140,9 +153,7 @@ void spMV( SellCSigma_Matrix const & A,
     else if (32 == C)
       return spMV<32>(A,x,y);
     else if (64 == C)
-      return spMV<64>(A,x,y);
-    else if (128 == C)
-        return spMV<128>(A,x,y);
+        return spMV<64>(A,x,y);
 #ifdef SET_C
     else if (SET_C == C)
         return spMV<SET_C>(A,x,y);
