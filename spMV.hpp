@@ -93,7 +93,8 @@ void spMV( SellCSigma_Matrix const & A,
                              y[0 : paddedRows])                     \
                      create(tmp) private(tmp)                       \
                      vector_length(C)                               \
-            loop
+                     num_workers(4)                                 \
+            loop gang worker
     // loop over all chunks
     for (int chunk=0; chunk < numberOfChunks; ++chunk)
     {
