@@ -78,73 +78,73 @@ int main(int argc, char *argv[])
 #endif
 
     /******CSR*******************************************************/
-    {
-    CSR_Matrix csr_matrix(mmMatrix);
+//     {
+//     CSR_Matrix csr_matrix(mmMatrix);
 
-    double const *val     = csr_matrix.getValues();
-    int const *colInd     = csr_matrix.getColInd();
-    int const *rowPtr     = csr_matrix.getRowPtr();
-    int const numRows     = csr_matrix.getRows();
-    int const length = csr_matrix.getRows();
-    int const numNonZeros = csr_matrix.getNonZeros();
+//     double const *val     = csr_matrix.getValues();
+//     int const *colInd     = csr_matrix.getColInd();
+//     int const *rowPtr     = csr_matrix.getRowPtr();
+//     int const numRows     = csr_matrix.getRows();
+//     int const length = csr_matrix.getRows();
+//     int const numNonZeros = csr_matrix.getNonZeros();
 
-    double timeing_start, timeing_end, runtime, cpuTime;
+//     double timeing_start, timeing_end, runtime, cpuTime;
 
-    // create vectors (NUMA awareness!)
-    double *x = new double[length];
-    double *y = new double[length];
+//     // create vectors (NUMA awareness!)
+//     double *x = new double[length];
+//     double *y = new double[length];
 
-    #pragma omp parallel for schedule(runtime)
-    for (int i=0; i<length; ++i)
-    {
-        x[i] = 1.;
-        y[i] = 0.;
-    }
+//     #pragma omp parallel for schedule(runtime)
+//     for (int i=0; i<length; ++i)
+//     {
+//         x[i] = 1.;
+//         y[i] = 0.;
+//     }
 
-    // copy data to device (if necessary)
-    #pragma acc data copyin (x[0:length],           \
-                             val[0:numNonZeros],    \
-                             colInd[0:numNonZeros], \
-                             rowPtr[0:numRows+1])   \
-                     copyout(y[0:length])
-    {
-        std::cout << "Starting CSR" << std::endl;
+//     // copy data to device (if necessary)
+//     #pragma acc data copyin (x[0:length],           \
+//                              val[0:numNonZeros],    \
+//                              colInd[0:numNonZeros], \
+//                              rowPtr[0:numRows+1])   \
+//                      copyout(y[0:length])
+//     {
+//         std::cout << "Starting CSR" << std::endl;
 
-        timing(&timeing_start, &cpuTime);
-#ifdef USE_LIKWID
-#pragma omp parallel
-{
-    LIKWID_MARKER_START("SpMV_CSR");
-}
-#endif
+//         timing(&timeing_start, &cpuTime);
+// #ifdef USE_LIKWID
+// #pragma omp parallel
+// {
+//     LIKWID_MARKER_START("SpMV_CSR");
+// }
+// #endif
 
-        for (int i=0; i<revisions; ++i)
-        {
-            spMV( csr_matrix, x, y );
-            // swap pointer
-            std::swap(x,y);
-        }
+//         for (int i=0; i<revisions; ++i)
+//         {
+//             spMV( csr_matrix, x, y );
+//             // swap pointer
+//             std::swap(x,y);
+//         }
 
-#ifdef USE_LIKWID
-#pragma omp parallel
-{
-    LIKWID_MARKER_STOP("SpMV_CSR");
-}
-#endif
+// #ifdef USE_LIKWID
+// #pragma omp parallel
+// {
+//     LIKWID_MARKER_STOP("SpMV_CSR");
+// }
+// #endif
 
-        timing(&timeing_end, &cpuTime);
-        runtime = timeing_end - timeing_start;
+//         timing(&timeing_end, &cpuTime);
+//         runtime = timeing_end - timeing_start;
 
-        double flops = numNonZeros * 2;
-        std::cout << "runtime CSR: " << runtime << " sec."
-                << " performance: " << flops * revisions / runtime
-                << std::endl;
-    } // copy data back form device
+//         double flops = numNonZeros * 2;
+//         std::cout << "runtime CSR: " << runtime << " sec."
+//                 << " performance: " << flops * revisions / runtime
+//                 << std::endl;
+//     } // copy data back form device
 
-    delete[] x;
-    delete[] y;
+//     delete[] x;
+//     delete[] y;
 
-    }
+//     }
 
     /******SELL*******************************************************/
     {
