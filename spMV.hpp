@@ -80,56 +80,41 @@ void spMV( SellCSigma_Matrix const & A,
     int const numberOfChunks = A.getNumberOfChunks();
     int const chunkSize      = C;
     int const paddedRows     = A.getPaddedRows();
-    int const capasety       = A.getCapasety();
+    int const capacity       = A.getCapasety();
 
-    double tmp[chunkSize];
-
-#pragma opm parallel private(tmp) for schedule(runtime)
-#pragma acc parallel present(val[0 : capasety],                     \
-                             colInd[0 : capasety],                  \
+#pragma omp parallel for schedule(runtime)
+#pragma acc parallel present(val[0 : capacity],                     \
+                             colInd[0 : capacity],                  \
                              chunkPtr[0 : numberOfChunks],          \
                              chunkLength[0 : numberOfChunks],       \
                              x[0 : paddedRows],                     \
                              y[0 : paddedRows])                     \
-                     create(tmp) private(tmp)                       \
                      vector_length(C)                               \
             loop
     // loop over all chunks
     for (int chunk=0; chunk < numberOfChunks; ++chunk)
     {
         int chunkOffset = chunkPtr[chunk];
+        int rowOffset   = chunk*chunkSize;
 
-        // fill tempory vector with values from y
         #pragma acc loop vector
-        for (int cRow=0        ,   rowID=chunk*chunkSize;
-                 cRow<chunkSize;
-               ++cRow          , ++rowID
-            )
+        #pragma omp simd
+        for (int chunkRow=0; chunkRow<chunkSize; ++chunkRow)
         {
-            tmp[cRow] = y[rowID];
-        }
+            int globalRow = rowOffset + chunkRow;
 
-        // loop over all row elements in chunk
-        for (int rowEntry=0; rowEntry<chunkLength[chunk]; ++rowEntry)
-        {
-            //  vectorised loop over all rows in chunk
-            #pragma omp simd
-            #pragma acc loop vector
-            for (int cRow=0; cRow<chunkSize; ++cRow)
+            // fill tempory vector with values from y
+            double tmp = y[globalRow];
+
+            // loop over all row elements in chunk
+            for (int rowEntry=0; rowEntry<chunkLength[chunk]; ++rowEntry)
             {
-                tmp[cRow] += val      [chunkOffset + rowEntry*chunkSize + cRow]
-                           * x[ colInd[chunkOffset + rowEntry*chunkSize + cRow] ];
+                tmp +=      val [chunkOffset + rowEntry*chunkSize + chunkRow]
+                     * x[ colInd[chunkOffset + rowEntry*chunkSize + chunkRow] ];
             }
-        }
 
-        // write back result of y = alpha Ax + beta y
-        #pragma acc loop vector
-        for (int cRow=0        , rowID=chunk*chunkSize;
-                 cRow<chunkSize;
-               ++cRow          , ++rowID
-            )
-        {
-            y[rowID] = tmp[cRow];
+            // write back result of y = alpha Ax + beta y
+            y[globalRow] = tmp;
         }
     }
 }
@@ -151,7 +136,11 @@ void spMV( SellCSigma_Matrix const & A,
     else if (16 == C)
         return spMV<16>(A,x,y);
     else if (32 == C)
-        return spMV<32>(A,x,y);
+      return spMV<32>(A,x,y);
+    else if (64 == C)
+      return spMV<64>(A,x,y);
+    else if (128 == C)
+        return spMV<128>(A,x,y);
 #ifdef SET_C
     else if (SET_C == C)
         return spMV<SET_C>(A,x,y);

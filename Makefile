@@ -43,8 +43,7 @@ CFLAGS    += $(ARCHFLAGS)
 #CFLAGS    += $(VERBOSEFLAGS)
 
 omp: CFLAGS += -fopenmp $(LIKWIDFLAGS)
-acc: CFLAGS += -acc -ta=tesla
-#TODO managed, GPU genauer angeben
+acc: CFLAGS += -acc -ta=tesla:lineinfo,cuda8.0,cc35 #TODO vielleciht auch mal pined ausprobieren
 
 CPPFLAGS   = $(CFLAGS) -std=c++11
 LDFLAGS    = $(LIKWIDLD_FLAGS)
