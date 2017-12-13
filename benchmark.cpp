@@ -223,11 +223,13 @@ int main(int argc, char *argv[])
 
         int flops       = nonZeros * 2;
 
-        std::cout << "runtime Sell-" << C << "-" << sigma << ": " << runtime << " sec."
-                  << " performance: " << static_cast<double>(flops)*revisions / runtime
-                  << " flop/s overhead: "
+        std::cout << "Runtime Sell-" << C << "-" << sigma << ": " << runtime << " sec."
+                  << " Performance: " << static_cast<double>(flops)*revisions / runtime / 1000000000.0
+                  << " GFlop/s, fill-in overhead: "
                   << static_cast<double>(overhead)/(nonZeros+overhead)*100 << "%"
                   << std::endl;
+
+		std::cout << "Convert overhead: " << runtime / sell_matrix.getConvertTime() * 100.0 << "%" << std::endl;
     } // copy data back from device
 
     delete[] x;

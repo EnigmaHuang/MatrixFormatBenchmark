@@ -11,7 +11,7 @@
 
 #include "MMreader.hpp"
 
-
+#include <omp.h>
 
 /*****Class SELL-C-Sigam******************************************************/
 class SellCSigma_Matrix
@@ -34,6 +34,7 @@ public:
     int const * getChankLength() const { return chunkLength_; }
     int const * getPermutation() const { return permute_; }
     double const * getValues()   const { return val_; }
+	double getConvertTime()      const { return convert_time_; }
 
     // We do not need copy and move symantic for this benchmark
     SellCSigma_Matrix(SellCSigma_Matrix const & other) = delete;   // copy constructor
@@ -48,6 +49,7 @@ private:
     int *permute_;      // Sell-C-sigma row ID -> orginal row ID
     int *antiPermute_;  // orginal row ID -> Sell row ID
     double* val_;
+	double convert_time_;
 };
 
 
@@ -61,8 +63,9 @@ SellCSigma_Matrix::SellCSigma_Matrix( MMreader mmMatrix, int C, int const sigma 
 ,colInd_(nullptr)
 ,chunkPtr_(new int[numberOfChunks_]), chunkLength_(new int[numberOfChunks_])
 ,permute_(new int[M_]), antiPermute_(new int[M_])
-,val_(nullptr)
+,val_(nullptr), convert_time_(0)
 {
+	double st = omp_get_wtime();
 
     // sort input Matrix by row ID
     if( !mmMatrix.isRowSorted() )
@@ -180,6 +183,9 @@ SellCSigma_Matrix::SellCSigma_Matrix( MMreader mmMatrix, int C, int const sigma 
             }
         }
     }
+
+	double et = omp_get_wtime();
+	this->convert_time_ = et - st;
 
     /*
     std::cout << "Sell-C-sigma constructed:"

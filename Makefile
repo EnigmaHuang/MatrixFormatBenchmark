@@ -1,7 +1,7 @@
 ######## DEFINE COMPILER ######################################
 # Use the Intel c and C++ compiler
-#CC       = icc
-#CPP      = icpc
+CC       = icc
+CPP      = icpc
 
 # Use the GNU C and C++ compiler
 #CC       = gcc
@@ -12,8 +12,8 @@
 #CPP      = clang++
 
 # PGI
-CC		   = pgcc
-CPP		   = pgc++
+#CC		   = pgcc
+#CPP		   = pgc++
 
 ######## DEFINE COMPILER FLAGS ################################
 CFLAGS       = -O3
@@ -23,15 +23,15 @@ VERBOSEFLAGS = -DVERBOSE
 # uncommend the following two lines
 # the evvirement variables LIKWID_LIB and LIKWID_INC has to be set
 # on the rrze cluster this variables are already set
-LIKWIDFLAGS  = -DUSE_LIKWID $(LIKWID_INC) -DLIKWID_PERFMON
-LIKWIDLD_FLAGS = $(LIKWID_LIB) -llikwid -lm
+#LIKWIDFLAGS  = -DUSE_LIKWID $(LIKWID_INC) -DLIKWID_PERFMON
+#LIKWIDLD_FLAGS = $(LIKWID_LIB) -llikwid -lm
 
 ifeq "$(CC)" "gcc"
 	VERBOSEFLAGS += -g -Wall -ansi
 	ARCHFLAGS    += -march=native
 else ifeq "$(CC)" "icc"
 	VERBOSEFLAGS += -g -Wall -ansi
-	ARCHFLAGS    += -xhost
+	ARCHFLAGS    += -xHost
 else ifeq "$(CC)" "clang"
 	VERBOSEFLAGS += -g -Wall -ansi
 else ifeq "$(CC)" "pgcc"
